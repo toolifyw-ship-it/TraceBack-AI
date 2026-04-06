@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <meta name="description" content="TraceBack AI - Global Digital Footprint Analysis Platform. Find all social media accounts linked to email or phone. GDPR, CCPA, DPDP, ISO 27001 Ready Compliant.">
-    <meta name="keywords" content="digital footprint, social media finder, email search, phone search, privacy compliance, GDPR, CCPA, DPDP, ISO 27001">
+    <meta name="description" content="TraceBack AI - Complete Digital Footprint Analysis Platform. Find all social media accounts linked to email or phone. 7-Day Money-Back Guarantee. GDPR, CCPA, DPDP Compliant.">
+    <meta name="keywords" content="digital footprint, social media finder, email search, phone search, privacy tool">
     <meta name="author" content="TraceBack AI">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4f46e5">
-    <title>TraceBack AI | Global Digital Footprint Analyzer | ISO 27001 Ready</title>
-    
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <title>TraceBack AI | Complete Digital Footprint Analysis | 7-Day Money-Back</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -35,66 +32,120 @@
         .animate-slide-up { animation: slide-up 0.3s ease-out; }
         .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
         footer { margin-top: auto; }
-        .compliance-badge { background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.3); }
-        .iso-badge { background: linear-gradient(135deg, #1e3a5f, #0f2b4a); border: 1px solid #3b82f6; }
-        @media print { .no-print { display: none !important; } }
-        .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; border-top: 1px solid #334155; z-index: 1000; transform: translateY(100%); transition: transform 0.3s ease; }
-        .cookie-banner.show { transform: translateY(0); }
-        .alert-badge { background: #ef4444; animation: pulse 1s ease-in-out infinite; }
-        .parental-card { border-left: 4px solid #f59e0b; }
-        .legal-card { border-left: 4px solid #8b5cf6; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: #1e293b; border-radius: 1.5rem; max-width: 450px; width: 90%; padding: 1.5rem; border: 1px solid #4f46e5; animation: slide-up 0.3s ease; }
+        .pricing-card { transition: all 0.3s ease; cursor: pointer; }
+        .pricing-card:hover { transform: translateY(-10px); border-color: #4f46e5; }
+        .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, #f59e0b, #ef4444); padding: 4px 16px; border-radius: 20px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: #1e293b; border-radius: 1.5rem; max-width: 500px; width: 90%; padding: 1.5rem; border: 1px solid #4f46e5; animation: slide-up 0.3s ease; }
         .otp-input { letter-spacing: 8px; font-size: 2rem; text-align: center; font-weight: bold; }
         .age-verified-badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .age-pending-badge { background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .admin-badge { background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; }
+        .refund-badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; }
+        .filter-btn.active { background: #4f46e5 !important; }
+        .scrollbar-custom::-webkit-scrollbar { width: 6px; }
+        .scrollbar-custom::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+        .disabled-link { opacity: 0.5; pointer-events: none; cursor: not-allowed; }
     </style>
 </head>
-<body>
+<body class="scrollbar-custom">
 
-    <!-- Cookie Banner -->
-    <div id="cookieBanner" class="cookie-banner p-4">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-sm text-slate-300">
-                <i class="fas fa-cookie-bite text-yellow-500 mr-2"></i>
-                We use cookies to enhance your experience, analyze traffic, and comply with GDPR/CCPA regulations. 
-                <a href="#" onclick="showFullPrivacy(); return false;" class="text-indigo-400 underline">Learn more</a>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="declineCookies()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm transition">Decline</button>
-                <button onclick="acceptCookies()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-sm font-semibold transition">Accept All</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Age Verification Modal -->
-    <div id="ageVerificationModal" class="modal-overlay" style="display: none;">
+    <!-- ==================== AGE VERIFICATION MODAL (FIRST - BEFORE LOGIN) ==================== -->
+    <div id="ageVerificationModal" class="modal-overlay" style="display: flex;">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-indigo-400"><i class="fas fa-shield-alt mr-2"></i>Age Verification Required</h3>
-                <button onclick="closeAgeModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+                <button onclick="closeAgeModal()" class="text-slate-400 hover:text-white text-2xl" style="display: none;">&times;</button>
             </div>
-            <p class="text-slate-400 text-sm mb-4">As per <strong class="text-orange-400">DPDP Act 2023 (India)</strong> and <strong class="text-blue-400">GDPR (EU)</strong>, you must be 18 years or older to use this service.</p>
+            <p class="text-slate-400 text-sm mb-4">To comply with global privacy laws (GDPR, CCPA, DPDP), we need to verify your age before you can use this service.</p>
+            <p class="text-slate-300 text-sm mb-3"><i class="fas fa-info-circle text-blue-400 mr-1"></i> Age requirements by region:</p>
+            <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-4">
+                <span>🇮🇳 India: 18+</span>
+                <span>🇪🇺 EU: 16+</span>
+                <span>🇺🇸 USA: 13+ (with consent)</span>
+                <span>🇬🇧 UK: 13+ (with consent)</span>
+                <span>🇨🇦 Canada: 13+</span>
+                <span>🇦🇺 Australia: 13+</span>
+                <span>🇦🇪 UAE: 18+</span>
+                <span>🇸🇬 Singapore: 13+</span>
+            </div>
+            <select id="regionSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+                <option value="india">🇮🇳 India (18+ - DPDP Act)</option>
+                <option value="eu">🇪🇺 European Union (16+ - GDPR)</option>
+                <option value="usa">🇺🇸 USA (13+ with consent - COPPA)</option>
+                <option value="uk">🇬🇧 United Kingdom (13+ with consent)</option>
+                <option value="canada">🇨🇦 Canada (13+ - PIPEDA)</option>
+                <option value="australia">🇦🇺 Australia (13+ - Privacy Act)</option>
+                <option value="uae">🇦🇪 UAE (18+ - Dubai Data Law)</option>
+                <option value="singapore">🇸🇬 Singapore (13+ - PDPA)</option>
+                <option value="other">🌍 Other (18+ recommended)</option>
+            </select>
             <label class="block text-sm text-slate-300 mb-2">📅 Date of Birth:</label>
             <input type="date" id="dobInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
             <div class="flex gap-3">
-                <button onclick="verifyUserAge()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Verify Age</button>
-                <button onclick="closeAgeModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl transition">Cancel</button>
+                <button onclick="verifyAgeAndProceed()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Verify & Continue</button>
+                <button onclick="exitSite()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-6 py-2 rounded-xl transition">Exit</button>
             </div>
             <p id="ageError" class="text-red-400 text-xs mt-3 hidden"></p>
-            <p class="text-xs text-slate-500 mt-4 text-center"><i class="fas fa-lock"></i> Your data is protected under DPDP Act 2023</p>
+            <p id="ageInfo" class="text-slate-500 text-xs mt-3 text-center"></p>
         </div>
     </div>
 
-    <!-- 2FA Delete Modal -->
+    <!-- ==================== PARENTAL CONSENT MODAL (FOR UNDERAGE USERS) ==================== -->
+    <div id="parentalConsentModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-amber-400"><i class="fas fa-child mr-2"></i>Parental Consent Required</h3>
+                <button onclick="closeParentalModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <p id="parentalConsentMessage" class="text-slate-400 text-sm mb-4">You are under the required age for your region. Parental consent is required by law.</p>
+            <label class="block text-sm text-slate-300 mb-2">👨‍👩‍👧 Parent/Guardian Email:</label>
+            <input type="email" id="parentEmail" placeholder="parent@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <label class="block text-sm text-slate-300 mb-2">👶 Child's Name:</label>
+            <input type="text" id="childName" placeholder="Child's name" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <div class="flex gap-3">
+                <button onclick="sendParentalConsent()" class="bg-amber-600 hover:bg-amber-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Send Consent Request</button>
+                <button onclick="closeParentalModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl transition">Cancel</button>
+            </div>
+            <p class="text-xs text-slate-500 mt-4 text-center">A consent link will be sent to the parent's email address. Access granted only after approval.</p>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN MODAL (AFTER AGE VERIFICATION) ==================== -->
+    <div id="loginModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-indigo-400"><i class="fas fa-sign-in-alt mr-2"></i>Sign In to Continue</h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <p class="text-slate-400 text-sm mb-4">Age verification complete! Please sign in to access all features.</p>
+            <div class="space-y-3">
+                <button onclick="handleSignIn()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fab fa-google"></i> Sign in with Google
+                </button>
+                <div class="relative my-4">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-700"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs">
+                        <span class="bg-slate-800 px-2 text-slate-400">Or continue with email</span>
+                    </div>
+                </div>
+                <input type="email" id="loginEmail" placeholder="Email address" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500">
+                <input type="password" id="loginPassword" placeholder="Password (demo: any)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500">
+                <button onclick="demoSignIn()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-semibold transition">Continue with Email</button>
+            </div>
+            <p class="text-xs text-slate-500 mt-4 text-center">By signing in, you agree to our Terms of Service and Privacy Policy.</p>
+        </div>
+    </div>
+
+    <!-- ==================== 2FA DELETE MODAL ==================== -->
     <div id="delete2FAModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-red-400"><i class="fas fa-shield-alt mr-2"></i>Two-Factor Verification Required</h3>
                 <button onclick="close2FAModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
             </div>
-            <p class="text-slate-400 text-sm mb-4">⚠️ This action is <strong class="text-red-400">IRREVERSIBLE</strong>. We've sent a <strong>6-digit OTP</strong> to your registered email address.</p>
+            <p class="text-slate-400 text-sm mb-4">⚠️ This action is IRREVERSIBLE. A 6-digit OTP has been sent to your email.</p>
             <label class="block text-sm text-slate-300 mb-2">🔐 Enter OTP:</label>
             <input type="text" id="otpInput" maxlength="6" placeholder="000000" class="otp-input w-full bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 text-center text-2xl tracking-widest focus:outline-none focus:border-indigo-500">
             <div class="flex gap-3 mb-3">
@@ -105,25 +156,33 @@
         </div>
     </div>
 
-    <!-- Parental Consent Modal -->
-    <div id="parentalConsentModal" class="modal-overlay" style="display: none;">
+    <!-- ==================== REFUND REQUEST MODAL ==================== -->
+    <div id="refundModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-amber-400"><i class="fas fa-child mr-2"></i>Parental Consent Required</h3>
-                <button onclick="closeParentalModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+                <h3 class="text-xl font-bold text-emerald-400"><i class="fas fa-hand-holding-usd mr-2"></i>Request Refund</h3>
+                <button onclick="closeRefundModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
             </div>
-            <p class="text-slate-400 text-sm mb-4">You are under 18 years old. As per <strong class="text-orange-400">DPDP Act 2023</strong>, parental consent is required.</p>
-            <label class="block text-sm text-slate-300 mb-2">👨‍👩‍👧 Parent/Guardian Email:</label>
-            <input type="email" id="parentEmail" placeholder="parent@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <p class="text-slate-400 text-sm mb-4">7-Day Money-Back Guarantee. Please provide your order details.</p>
+            <input type="text" id="orderId" placeholder="Order ID (e.g., TB-12345)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
+            <input type="email" id="refundEmail" placeholder="Your Email Address" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
+            <select id="refundReason" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
+                <option value="">Select Reason</option>
+                <option>Didn't find expected results</option>
+                <option>Technical issues</option>
+                <option>Accidental purchase</option>
+                <option>No longer need service</option>
+                <option>Other</option>
+            </select>
             <div class="flex gap-3">
-                <button onclick="sendParentalConsent()" class="bg-amber-600 hover:bg-amber-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Send Consent Request</button>
-                <button onclick="closeParentalModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl transition">Cancel</button>
+                <button onclick="submitRefundRequest()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Submit Request</button>
+                <button onclick="closeRefundModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl transition">Cancel</button>
             </div>
-            <p class="text-xs text-slate-500 mt-4 text-center">A consent link will be sent to the parent's email address.</p>
+            <p class="text-xs text-slate-500 mt-4 text-center">Refund requests processed within 48 hours</p>
         </div>
     </div>
 
-    <!-- Audit Log Modal -->
+    <!-- ==================== AUDIT LOG MODAL ==================== -->
     <div id="auditLogModal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 600px;">
             <div class="flex justify-between items-center mb-4">
@@ -139,8 +198,8 @@
         </div>
     </div>
 
-    <!-- Navbar -->
-    <nav class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-slate-800 px-4 md:px-6 py-3 no-print">
+    <!-- ==================== NAVBAR ==================== -->
+    <nav class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-slate-800 px-4 md:px-6 py-3">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center gap-2">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
@@ -148,26 +207,19 @@
                 </div>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold gradient-text">TraceBack AI</h1>
-                    <p class="text-[9px] text-slate-500 -mt-1">ISO 27001 Ready | GDPR | CCPA | DPDP</p>
+                    <p class="text-[9px] text-slate-500 -mt-1">7-Day Money-Back | GDPR | CCPA | DPDP</p>
                 </div>
             </div>
             <div class="hidden md:flex gap-6 text-sm">
-                <a href="#home" class="hover:text-indigo-400 transition">Home</a>
-                <a href="#features" class="hover:text-indigo-400 transition">Features</a>
-                <a href="#target-audience" class="hover:text-indigo-400 transition">Who Uses</a>
-                <a href="#pricing" class="hover:text-indigo-400 transition">Pricing</a>
-                <a href="#contact" class="hover:text-indigo-400 transition">Contact</a>
-                <a href="#faq" class="hover:text-indigo-400 transition">FAQ</a>
-                <a href="#compliance" class="hover:text-indigo-400 transition">Compliance</a>
+                <a href="#home" class="hover:text-indigo-400 transition" id="navHome">Home</a>
+                <a href="#pricing" class="hover:text-indigo-400 transition" id="navPricing">Pricing</a>
+                <a href="#why" class="hover:text-indigo-400 transition" id="navWhy">Why Use</a>
+                <a href="#compliance" class="hover:text-indigo-400 transition" id="navCompliance">Compliance</a>
+                <a href="#faq" class="hover:text-indigo-400 transition" id="navFaq">FAQ</a>
             </div>
             <div class="flex items-center gap-3">
                 <div id="userInfo" class="flex items-center"></div>
-                <div id="userAvatar" class="hidden relative"></div>
-                <div id="ageStatusBadge" class="hidden mr-2"></div>
                 <div id="ageStatusDisplay" class="hidden"></div>
-                <button id="authBtn" onclick="handleSignIn()" class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2">
-                    <i class="fab fa-google"></i> Sign In
-                </button>
                 <button id="logoutBtn" onclick="handleLogout()" class="hidden bg-slate-700 hover:bg-red-600 px-5 py-2 rounded-full text-sm transition">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -176,41 +228,150 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        <!-- Hero Section -->
+        <!-- ==================== HERO SECTION ==================== -->
         <section id="home" class="text-center py-12 md:py-16">
             <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-5 text-xs font-bold text-indigo-400 uppercase bg-indigo-400/10 rounded-full border border-indigo-400/30">
-                <i class="fas fa-globe"></i> ISO 27001 Ready | GDPR | CCPA | DPDP Act 2023
+                <i class="fas fa-globe"></i> 7-Day Money-Back Guarantee | Trusted in 50+ Countries
             </div>
             <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-5">Discover Your <span class="gradient-text">Digital Footprint</span></h2>
-            <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mb-8">Enter any email or phone number to find all associated social media accounts, online profiles, and digital presence across 50+ platforms worldwide.</p>
+            <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mb-8">Enter any email or phone number to find all associated social media accounts, online profiles, and digital presence across 50+ platforms worldwide. <strong class="text-white">Start FREE - 5 searches/month!</strong></p>
             
             <div class="flex flex-col md:flex-row gap-4 justify-center max-w-3xl mx-auto">
                 <div class="flex-1 relative">
                     <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
                     <input type="text" id="searchInput" placeholder="Email or Phone Number (e.g., user@gmail.com or +1234567890)" class="w-full bg-slate-800/70 border border-slate-700 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-indigo-500 transition text-lg">
                 </div>
-                <button onclick="startAnalysis()" class="btn-primary px-8 py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 text-lg">
+                <button onclick="startAnalysis()" id="searchBtn" class="btn-primary px-8 py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 text-lg">
                     <i class="fas fa-search"></i> Analyze Now
                 </button>
             </div>
             
-            <!-- User Stats -->
             <div class="flex flex-wrap justify-center gap-4 mt-6 text-sm">
-                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-star text-yellow-500 mr-2"></i>Loyalty Points: <span id="loyaltyPoints" class="font-bold text-indigo-400">50</span></div>
-                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-chart-simple mr-2"></i>Searches Left: <span id="searchesLeft" class="font-bold text-emerald-400">5</span></div>
-            </div>
-            
-            <div class="flex flex-wrap justify-center gap-3 mt-6">
-                <span class="compliance-badge px-3 py-1 rounded-full text-xs"><i class="fas fa-check-circle text-green-500 mr-1"></i> ISO 27001 Ready</span>
-                <span class="compliance-badge px-3 py-1 rounded-full text-xs"><i class="fas fa-check-circle text-green-500 mr-1"></i> GDPR Compliant</span>
-                <span class="compliance-badge px-3 py-1 rounded-full text-xs"><i class="fas fa-check-circle text-green-500 mr-1"></i> CCPA Compliant</span>
-                <span class="compliance-badge px-3 py-1 rounded-full text-xs"><i class="fas fa-check-circle text-green-500 mr-1"></i> DPDP Act 2023</span>
-                <span class="compliance-badge px-3 py-1 rounded-full text-xs"><i class="fas fa-check-circle text-green-500 mr-1"></i> PIPEDA Compliant</span>
+                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 50+ Platforms</div>
+                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 5 FREE Searches</div>
+                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 7-Day Refund</div>
+                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> GDPR/CCPA/DPDP</div>
             </div>
         </section>
 
-        <!-- Loading -->
-        <div id="loading" class="hidden text-center py-12 no-print">
+        <!-- ==================== WHY USE SECTION ==================== -->
+        <section id="why" class="py-16">
+            <h3 class="text-3xl md:text-4xl font-bold text-center mb-4">🔍 Why Choose TraceBack AI?</h3>
+            <p class="text-center text-slate-400 mb-12 max-w-2xl mx-auto">Trusted by professionals and individuals across 50+ countries</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-user-secret text-3xl text-indigo-400 mb-3"></i><h4 class="font-bold">Protect Your Privacy</h4><p class="text-sm text-slate-400">Find what personal info is publicly available online</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-id-card text-3xl text-emerald-400 mb-3"></i><h4 class="font-bold">Prevent Identity Theft</h4><p class="text-sm text-slate-400">Detect if your email appears in data breaches</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-briefcase text-3xl text-purple-400 mb-3"></i><h4 class="font-bold">Manage Reputation</h4><p class="text-sm text-slate-400">See what employers see when they search you</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-child text-3xl text-amber-400 mb-3"></i><h4 class="font-bold">Protect Children</h4><p class="text-sm text-slate-400">Monitor your children's online presence</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-shield-alt text-3xl text-red-400 mb-3"></i><h4 class="font-bold">Detect Breaches</h4><p class="text-sm text-slate-400">Get alerted for credential leaks</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-trash-alt text-3xl text-blue-400 mb-3"></i><h4 class="font-bold">Clean Old Accounts</h4><p class="text-sm text-slate-400">Find and delete forgotten accounts</p></div>
+            </div>
+        </section>
+
+        <!-- ==================== PRICING SECTION ==================== -->
+        <section id="pricing" class="py-16 border-t border-slate-800">
+            <h3 class="text-3xl md:text-4xl font-bold text-center mb-4">💰 Simple, Transparent Pricing</h3>
+            <p class="text-center text-slate-400 mb-12">Start free. Upgrade anytime. <span class="refund-badge"><i class="fas fa-shield-alt mr-2"></i> 7-Day Money-Back Guarantee</span></p>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="glass-card p-6 rounded-2xl text-center pricing-card">
+                    <div class="text-3xl mb-2">🎁</div>
+                    <h4 class="text-2xl font-bold mb-2">Free</h4>
+                    <p class="text-4xl font-bold mt-2">$0<span class="text-sm text-slate-400">/forever</span></p>
+                    <hr class="my-6 border-slate-700">
+                    <ul class="space-y-2 text-left text-sm">
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 5 searches/month</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 25+ platforms</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 7-day history</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Basic export (JSON)</li>
+                        <li class="text-slate-500"><i class="fas fa-times-circle mr-2"></i> Full source code download</li>
+                        <li class="text-slate-500"><i class="fas fa-times-circle mr-2"></i> Priority support</li>
+                    </ul>
+                    <button onclick="selectFreePlan()" class="mt-6 w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-semibold transition">Current Plan</button>
+                </div>
+                
+                <div class="glass-card p-6 rounded-2xl text-center pricing-card relative border-2 border-indigo-500">
+                    <div class="popular-badge">🔥 MOST POPULAR</div>
+                    <div class="text-3xl mb-2">💎</div>
+                    <h4 class="text-2xl font-bold mb-2">Pro Monthly</h4>
+                    <p class="text-4xl font-bold mt-2">$9<span class="text-sm text-slate-400">/month</span></p>
+                    <p class="text-emerald-400 text-xs mt-1">Cancel anytime • 7-day refund</p>
+                    <hr class="my-6 border-slate-700">
+                    <ul class="space-y-2 text-left text-sm">
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Unlimited searches</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 50+ platforms</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 1-year history</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Full source code download</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Dark web scanning</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Priority email support</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Export to JSON/PDF/CSV</li>
+                    </ul>
+                    <button onclick="initiatePayment('monthly')" class="btn-primary py-3 rounded-xl w-full font-bold transition">Upgrade →</button>
+                </div>
+                
+                <div class="glass-card p-6 rounded-2xl text-center pricing-card">
+                    <div class="text-3xl mb-2">🚀</div>
+                    <h4 class="text-2xl font-bold mb-2">Pro Yearly</h4>
+                    <p class="text-4xl font-bold mt-2">$79<span class="text-sm text-slate-400">/year</span></p>
+                    <p class="text-emerald-400 text-xs mt-1">🔥 Save 27% (3.2 months free!)</p>
+                    <hr class="my-6 border-slate-700">
+                    <ul class="space-y-2 text-left text-sm">
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> All Monthly features</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 2 months FREE (27% off)</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Priority 24/7 support</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> API access (10k/day)</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Team collaboration</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Early access to features</li>
+                    </ul>
+                    <button onclick="initiatePayment('yearly')" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 py-3 rounded-xl w-full font-bold transition">Save 27% →</button>
+                </div>
+            </div>
+            
+            <p class="text-center text-xs text-slate-500 mt-8">
+                <i class="fas fa-lock mr-1"></i> Secure payment via Razorpay (India) & Stripe (Global) • Cancel anytime • 7-day money-back guarantee
+            </p>
+        </section>
+
+        <!-- ==================== REFUND POLICY SECTION ==================== -->
+        <section id="refund-policy" class="py-16 border-t border-slate-800">
+            <h3 class="text-3xl font-bold text-center mb-8">💰 7-Day Money-Back Guarantee</h3>
+            <div class="max-w-4xl mx-auto glass-card p-8 rounded-2xl">
+                <div class="flex items-center justify-center mb-6">
+                    <span class="refund-badge text-lg px-6 py-2"><i class="fas fa-shield-alt mr-2"></i> 100% Risk-Free</span>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30">
+                        <h4 class="font-bold text-emerald-400 mb-3"><i class="fas fa-check-circle mr-2"></i> You WILL Get Refund If:</h4>
+                        <ul class="space-y-2 text-sm text-slate-300">
+                            <li>• Purchased within last <strong class="text-white">7 days</strong></li>
+                            <li>• Used less than <strong class="text-white">10 searches</strong></li>
+                            <li>• Did NOT export/download reports</li>
+                            <li>• Did NOT use API more than 50 times</li>
+                        </ul>
+                    </div>
+                    <div class="bg-red-500/10 p-4 rounded-xl border border-red-500/30">
+                        <h4 class="font-bold text-red-400 mb-3"><i class="fas fa-times-circle mr-2"></i> You WILL NOT Get Refund If:</h4>
+                        <ul class="space-y-2 text-sm text-slate-300">
+                            <li>• More than <strong class="text-white">7 days</strong> passed</li>
+                            <li>• Exceeded <strong class="text-white">10 searches</strong></li>
+                            <li>• Downloaded reports or exported data</li>
+                            <li>• Shared results with third parties</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button onclick="showRefundModal()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl font-semibold transition">
+                        <i class="fas fa-hand-holding-usd mr-2"></i> Request Refund
+                    </button>
+                    <p class="text-xs text-slate-500 mt-3">Refund requests processed within 48 hours. Money returned to original payment method.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== LOADING ==================== -->
+        <div id="loading" class="hidden text-center py-12">
             <div class="inline-block w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
             <p class="mt-3 text-slate-400">Scanning 50+ platforms globally... <span id="scanStep" class="text-indigo-400">Initializing</span></p>
             <div class="max-w-md mx-auto mt-4 bg-slate-800 rounded-full h-2 overflow-hidden">
@@ -218,24 +379,26 @@
             </div>
         </div>
 
-        <!-- Results Section -->
+        <!-- ==================== RESULTS SECTION ==================== -->
         <div id="resultsContainer" class="hidden mt-8">
-            <div class="flex flex-wrap justify-between items-center gap-4 mb-6 no-print">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                 <div>
                     <h3 class="text-2xl font-bold">📊 Search Results: <span id="resultQuery" class="gradient-text"></span></h3>
                     <p class="text-slate-400 text-sm"><span id="resultCount">0</span> digital footprints found</p>
                 </div>
                 <div class="flex gap-2 flex-wrap">
                     <button onclick="exportResults()" class="bg-slate-700 hover:bg-indigo-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-download"></i> Export JSON</button>
+                    <button onclick="exportResultsCSV()" class="bg-slate-700 hover:bg-emerald-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-file-csv"></i> Export CSV</button>
                     <button onclick="generatePDFReport()" class="bg-slate-700 hover:bg-red-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-file-pdf"></i> PDF Report</button>
                     <button onclick="printResults()" class="bg-slate-700 hover:bg-purple-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-print"></i> Print</button>
+                    <button onclick="shareResults()" class="bg-slate-700 hover:bg-blue-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-share-alt"></i> Share</button>
+                    <button onclick="showAuditLog()" class="bg-slate-700 hover:bg-amber-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-history"></i> Audit Log</button>
                     <button onclick="deleteAllResults()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-trash-alt"></i> Clear All</button>
-                    <button onclick="showAuditLog()" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-history"></i> Audit Log</button>
                     <button onclick="requestAccountDeletion()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-user-slash"></i> Delete Account</button>
                 </div>
             </div>
             
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 no-print">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                 <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-indigo-400" id="totalSites">0</p><p class="text-[10px]">Total Profiles</p></div>
                 <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-pink-400" id="totalSocial">0</p><p class="text-[10px]">Social Media</p></div>
                 <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-emerald-400" id="totalCode">0</p><p class="text-[10px]">Developer</p></div>
@@ -243,7 +406,7 @@
                 <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-orange-400" id="riskLevel">Low</p><p class="text-[10px]">Risk Score</p></div>
             </div>
             
-            <div class="flex flex-wrap gap-2 mb-4 no-print">
+            <div class="flex flex-wrap gap-2 mb-4">
                 <button onclick="filterResults('all')" class="filter-btn px-3 py-1 rounded-full text-xs bg-indigo-600">All</button>
                 <button onclick="filterResults('social')" class="filter-btn px-3 py-1 rounded-full text-xs bg-slate-700">Social Media</button>
                 <button onclick="filterResults('code')" class="filter-btn px-3 py-1 rounded-full text-xs bg-slate-700">Developer</button>
@@ -252,180 +415,70 @@
             </div>
             
             <div id="resultsList" class="space-y-3 max-h-[500px] overflow-y-auto pr-2"></div>
-            <div id="pagination" class="flex justify-center gap-2 mt-6 no-print"></div>
+            
+            <div id="pagination" class="flex justify-center gap-2 mt-6"></div>
         </div>
 
-        <!-- History Section -->
-        <section id="history" class="mt-16 no-print">
+        <!-- ==================== HISTORY SECTION ==================== -->
+        <section id="history" class="mt-16">
             <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
                 <h3 class="text-2xl font-bold"><i class="fas fa-clock text-indigo-400 mr-2"></i>Your Search History</h3>
-                <button onclick="exportUserData()" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-4 py-2 rounded-xl text-sm transition">
-                    <i class="fas fa-download"></i> Export Data
+                <button onclick="clearAllHistory()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-4 py-2 rounded-xl text-sm transition">
+                    <i class="fas fa-trash-alt"></i> Clear All History
                 </button>
             </div>
             <div id="historyList" class="space-y-3"></div>
         </section>
 
-        <!-- Target Audience Section -->
-        <section id="target-audience" class="py-16 no-print">
-            <h3 class="text-3xl font-bold text-center mb-4">👥 Who Uses TraceBack AI & Why?</h3>
-            <p class="text-center text-slate-400 mb-10">Trusted by professionals and individuals across 50+ countries</p>
-            
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="glass-card p-5 rounded-xl text-center hover:border-blue-400 transition">
-                    <i class="fas fa-user-tie text-3xl text-blue-400 mb-3"></i>
-                    <h4 class="font-bold text-lg">HR & Recruiters</h4>
-                    <p class="text-sm text-slate-400 mt-2">Verify candidate backgrounds, check social media presence, and ensure professional credibility before hiring.</p>
-                    <button onclick="generateBackgroundReport()" class="mt-3 bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1 rounded-lg text-xs transition w-full">
-                        <i class="fas fa-file-pdf"></i> Download Background Check
-                    </button>
-                </div>
-                
-                <div class="glass-card p-5 rounded-xl text-center hover:border-emerald-400 transition">
-                    <i class="fas fa-shield-alt text-3xl text-emerald-400 mb-3"></i>
-                    <h4 class="font-bold text-lg">Cybersecurity Teams</h4>
-                    <p class="text-sm text-slate-400 mt-2">Monitor company data leaks, track exposed credentials, and prevent potential security breaches.</p>
-                    <div class="mt-3 flex gap-2">
-                        <button onclick="setupBreachAlert()" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-3 py-1 rounded-lg text-xs transition flex-1">
-                            <i class="fas fa-bell"></i> Set Alert
-                        </button>
-                        <button onclick="exportBreachData()" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white px-3 py-1 rounded-lg text-xs transition flex-1">
-                            <i class="fas fa-chart-line"></i> Export Logs
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="glass-card p-5 rounded-xl text-center hover:border-purple-400 transition">
-                    <i class="fas fa-user text-3xl text-purple-400 mb-3"></i>
-                    <h4 class="font-bold text-lg">Individuals</h4>
-                    <p class="text-sm text-slate-400 mt-2">Manage your online reputation, find forgotten accounts, and protect your digital privacy.</p>
-                    <button onclick="exportUserData()" class="mt-3 bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white px-3 py-1 rounded-lg text-xs transition w-full">
-                        <i class="fas fa-database"></i> Export My Data
-                    </button>
-                </div>
-                
-                <div class="glass-card p-5 rounded-xl text-center hover:border-amber-400 transition parental-card">
-                    <i class="fas fa-child text-3xl text-amber-400 mb-3"></i>
-                    <h4 class="font-bold text-lg">Parents</h4>
-                    <p class="text-sm text-slate-400 mt-2">Monitor children's online presence, ensure their safety, and prevent cyberbullying.</p>
-                    <div class="mt-3 space-y-2">
-                        <input type="text" id="childEmail" placeholder="Child's email to monitor" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
-                        <button onclick="setupParentalAlert()" class="bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1 rounded-lg text-xs transition w-full">
-                            <i class="fas fa-bell"></i> Enable Email Alerts
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="glass-card p-5 rounded-xl text-center hover:border-red-400 transition">
-                    <i class="fas fa-newspaper text-3xl text-red-400 mb-3"></i>
-                    <h4 class="font-bold text-lg">Journalists</h4>
-                    <p class="text-sm text-slate-400 mt-2">Verify sources, fact-check information, and discover digital evidence for stories.</p>
-                    <div class="mt-3 flex gap-2">
-                        <button onclick="crossReferenceSources()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1 rounded-lg text-xs transition flex-1">
-                            <i class="fas fa-crosshairs"></i> Cross-Reference
-                        </button>
-                        <button onclick="generateCitation()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1 rounded-lg text-xs transition flex-1">
-                            <i class="fas fa-quote-right"></i> Citation
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="glass-card p-5 rounded-xl text-center hover:border-indigo-400 transition legal-card">
-                    <i class="fas fa-gavel text-3xl text-indigo-400 mb-3"></i>
-                    <h4 class="font-bold text-lg">Legal Professionals</h4>
-                    <p class="text-sm text-slate-400 mt-2">Gather digital evidence for cases and verify witness online presence.</p>
-                    <div class="mt-3 flex gap-2">
-                        <button onclick="generateAffidavit()" class="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white px-3 py-1 rounded-lg text-xs transition flex-1">
-                            <i class="fas fa-file-alt"></i> Affidavit
-                        </button>
-                        <button onclick="addBlockchainTimestamp()" class="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white px-3 py-1 rounded-lg text-xs transition flex-1">
-                            <i class="fas fa-link"></i> Timestamp
-                        </button>
-                    </div>
-                </div>
+        <!-- ==================== GLOBAL COMPLIANCE SECTION ==================== -->
+        <section id="compliance" class="py-16 border-t border-slate-800">
+            <h3 class="text-3xl font-bold text-center mb-8">🌍 Global Compliance Framework</h3>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-indigo-400"><i class="fas fa-globe-europe mr-2"></i>GDPR (EU)</h4><p class="text-xs text-slate-400">Age: 16+ • Data portability • Right to deletion</p></div>
+                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-blue-400"><i class="fas fa-flag-usa mr-2"></i>CCPA/COPPA (USA)</h4><p class="text-xs text-slate-400">Age: 13+ with consent • Opt-out rights</p></div>
+                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-orange-400"><i class="fas fa-flag-india mr-2"></i>DPDP Act (India)</h4><p class="text-xs text-slate-400">Age: 18+ • Data localization • Grievance officer</p></div>
+                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-red-400"><i class="fas fa-maple-leaf mr-2"></i>PIPEDA (Canada)</h4><p class="text-xs text-slate-400">Age: 13+ • Accountability • Consent</p></div>
+                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-green-400"><i class="fas fa-flag-checkered mr-2"></i>Privacy Act (Australia)</h4><p class="text-xs text-slate-400">Age: 13+ • Openness • Data quality</p></div>
+                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-yellow-400"><i class="fas fa-globe-asia mr-2"></i>PDPA (Singapore)</h4><p class="text-xs text-slate-400">Age: 13+ • Consent • Purpose limitation</p></div>
             </div>
             
-            <div id="breachAlertBanner" class="hidden mt-6 glass-card p-4 rounded-xl border-l-4 border-red-500 animate-pulse-slow">
-                <div class="flex items-center gap-3">
-                    <div class="alert-badge w-3 h-3 rounded-full"></div>
-                    <span class="text-sm font-semibold text-red-400">⚠️ REAL-TIME BREACH ALERT</span>
-                    <span class="text-xs text-slate-400" id="breachAlertMessage">New data breach detected! Check your credentials.</span>
-                    <button onclick="dismissAlert()" class="ml-auto text-slate-500 hover:text-white">✕</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="features" class="py-16 border-t border-slate-800 no-print"><h3 class="text-3xl font-bold text-center mb-10">✨ Platform Features</h3><div class="grid md:grid-cols-4 gap-6"><div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-shield-alt text-3xl text-indigo-400 mb-3"></i><h4 class="font-bold">ISO 27001 Ready</h4><p class="text-xs text-slate-400">Enterprise-grade security framework</p></div><div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-database text-3xl text-emerald-400 mb-3"></i><h4 class="font-bold">Local Storage</h4><p class="text-xs text-slate-400">Data stored in your browser</p></div><div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-mobile-alt text-3xl text-purple-400 mb-3"></i><h4 class="font-bold">Cross-Platform</h4><p class="text-xs text-slate-400">Works on all devices</p></div><div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-headset text-3xl text-orange-400 mb-3"></i><h4 class="font-bold">24/7 Support</h4><p class="text-xs text-slate-400">Global support team</p></div></div></section>
-
-        <section id="pricing" class="py-16 border-t border-slate-800 no-print"><h3 class="text-3xl font-bold text-center mb-8">💰 Simple Pricing (Global)</h3><div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto"><div class="glass-card p-6 rounded-2xl text-center"><h4 class="text-xl font-bold">Free</h4><p class="text-3xl font-bold mt-2">$0</p><p class="text-slate-400 text-sm">Forever</p><ul class="mt-4 space-y-2 text-sm"><li>✓ 5 searches/month</li><li>✓ Basic platforms</li><li>✓ Local save</li><li>✓ Email support</li></ul><button class="mt-6 bg-slate-700 px-6 py-2 rounded-xl w-full">Current Plan</button></div><div class="glass-card p-6 rounded-2xl text-center border-2 border-indigo-500 relative"><span class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-xs px-3 py-1 rounded-full text-white">Popular</span><h4 class="text-xl font-bold">Pro</h4><p class="text-3xl font-bold mt-2">$19</p><p class="text-slate-400 text-sm">/month</p><ul class="mt-4 space-y-2 text-sm"><li>✓ Unlimited searches</li><li>✓ 100+ platforms</li><li>✓ PDF & CSV export</li><li>✓ Priority support</li></ul><button onclick="upgradePro()" class="btn-primary px-6 py-2 rounded-xl w-full">Upgrade</button></div><div class="glass-card p-6 rounded-2xl text-center"><h4 class="text-xl font-bold">Enterprise</h4><p class="text-3xl font-bold mt-2">Custom</p><p class="text-slate-400 text-sm">Contact us</p><ul class="mt-4 space-y-2 text-sm"><li>✓ All Pro features</li><li>✓ API access</li><li>✓ On-premise</li><li>✓ SLA guarantee</li></ul><button onclick="contactSales()" class="bg-purple-600 px-6 py-2 rounded-xl w-full">Contact Sales</button></div></div></section>
-
-        <section id="contact" class="py-16 border-t border-slate-800 no-print"><h3 class="text-3xl font-bold text-center mb-8">📞 Contact Us & Reviews</h3><div class="grid md:grid-cols-2 gap-8"><div class="glass-card p-6 rounded-2xl"><h4 class="text-xl font-bold mb-4"><i class="fas fa-envelope text-indigo-400 mr-2"></i>Send us a Message</h4><form id="contactForm" onsubmit="submitContact(event)"><input type="text" id="contactName" placeholder="Your Full Name" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500" required><input type="email" id="contactEmail" placeholder="Email Address" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500" required><select id="contactCountry" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500"><option value="">Select Country</option><option>United States</option><option>United Kingdom</option><option>Canada</option><option>Australia</option><option>India</option><option>Germany</option><option>France</option><option>Singapore</option><option>UAE</option></select><textarea id="contactMessage" rows="4" placeholder="Your Message..." class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500" required></textarea><button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl w-full font-semibold transition">Send Message</button></form></div><div class="glass-card p-6 rounded-2xl"><h4 class="text-xl font-bold mb-4"><i class="fas fa-star text-yellow-400 mr-2"></i>Rate Our Service</h4><div class="flex justify-center gap-2 text-3xl mb-4"><i class="far fa-star cursor-pointer hover:text-yellow-400 review-star" data-rating="1"></i><i class="far fa-star cursor-pointer hover:text-yellow-400 review-star" data-rating="2"></i><i class="far fa-star cursor-pointer hover:text-yellow-400 review-star" data-rating="3"></i><i class="far fa-star cursor-pointer hover:text-yellow-400 review-star" data-rating="4"></i><i class="far fa-star cursor-pointer hover:text-yellow-400 review-star" data-rating="5"></i></div><textarea id="reviewText" rows="3" placeholder="Share your experience with us..." class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500"></textarea><button onclick="submitReview()" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl w-full font-semibold transition">Submit Review</button><p class="text-xs text-slate-500 mt-3 text-center"><i class="fas fa-shield-alt"></i> Your feedback helps us improve</p></div></div></section>
-
-        <!-- Compliance Section -->
-        <section id="compliance" class="py-16 border-t border-slate-800 no-print">
-            <h3 class="text-3xl font-bold text-center mb-8">🔒 Global Compliance Framework</h3>
-            <div class="flex justify-center mb-8">
-                <div class="iso-badge px-6 py-3 rounded-full flex items-center gap-3">
-                    <i class="fas fa-certificate text-2xl text-blue-400"></i>
-                    <span class="font-bold">ISO 27001:2022 Ready</span>
-                    <span class="text-xs text-slate-400">| Information Security Management System</span>
-                </div>
-            </div>
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="glass-card p-6 rounded-2xl"><h4 class="text-xl font-bold mb-4"><i class="fas fa-globe-europe text-indigo-400 mr-2"></i>GDPR (EU) & CCPA (USA)</h4><div class="space-y-3 text-sm text-slate-400"><div><i class="fas fa-check-circle text-green-500 w-5"></i> Right to Access - Export your data anytime</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Right to Deletion - Permanent data removal</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Right to Portability - JSON export available</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Opt-Out Rights - Cookie consent banner</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Data Minimization - Only email collected</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Breach Notification - 72-hour policy</div></div></div>
-                <div class="glass-card p-6 rounded-2xl"><h4 class="text-xl font-bold mb-4"><i class="fas fa-flag-india text-orange-400 mr-2"></i>DPDP Act 2023 (India)</h4><div class="space-y-3 text-sm text-slate-400"><div><i class="fas fa-check-circle text-green-500 w-5"></i> Data Localization - India servers available</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Age Verification - 18+ confirmation required</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Consent Management - Explicit user consent</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Grievance Redressal - Dedicated contact form</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Data Fiduciary - Registered entity</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> Right to be Forgotten - Permanent deletion</div></div></div>
-                <div class="glass-card p-6 rounded-2xl"><h4 class="text-xl font-bold mb-4"><i class="fas fa-shield-haltered text-blue-400 mr-2"></i>ISO 27001 Controls Implemented</h4><div class="space-y-3 text-sm text-slate-400"><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.5 - Information Security Policies</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.6 - Organization of Information Security</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.8 - Asset Management & Classification</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.9 - Access Control (Sign-in/Logout)</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.10 - Cryptography (AES-256)</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.12 - Operational Security</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.16 - Incident Management</div><div><i class="fas fa-check-circle text-green-500 w-5"></i> A.18 - Compliance (GDPR/CCPA/DPDP)</div></div></div>
-                <div class="glass-card p-6 rounded-2xl"><h4 class="text-xl font-bold mb-4"><i class="fas fa-user-shield text-red-400 mr-2"></i>Security & Compliance Team</h4><div class="space-y-3 text-sm"><div><i class="fas fa-envelope text-slate-400 w-5"></i> <span class="text-slate-300">DPO:</span> <a href="mailto:dpo@traceback.ai" class="text-indigo-400">dpo@traceback.ai</a></div><div><i class="fas fa-envelope text-slate-400 w-5"></i> <span class="text-slate-300">Security:</span> <a href="mailto:security@traceback.ai" class="text-indigo-400">security@traceback.ai</a></div><div><i class="fas fa-envelope text-slate-400 w-5"></i> <span class="text-slate-300">Privacy:</span> <a href="mailto:privacy@traceback.ai" class="text-indigo-400">privacy@traceback.ai</a></div><div><i class="fas fa-clock text-slate-400 w-5"></i> <span class="text-slate-300">Breach Notification:</span> Within 72 hours</div><div><i class="fas fa-database text-slate-400 w-5"></i> <span class="text-slate-300">Data Retention:</span> 30 days</div></div></div>
-            </div>
-            
-            <!-- Data Localization Declaration -->
-            <div class="mt-4 glass-card p-5 rounded-2xl border-l-4 border-emerald-500">
-                <h4 class="text-lg font-bold mb-2 flex items-center gap-2"><i class="fas fa-database text-emerald-400"></i> Data Localization Commitment</h4>
-                <p class="text-sm text-slate-300">In compliance with <strong class="text-emerald-400">DPDP Act 2023 (India)</strong> and other regional data laws, all personal data of Indian users is stored exclusively on servers located within India (Google Cloud asia-south1 - Mumbai region). For users in the EU, data is stored in Frankfurt (europe-west3). For users in the USA, data is stored in us-central1 (Iowa).</p>
+            <div class="mt-6 glass-card p-5 rounded-2xl border-l-4 border-emerald-500">
+                <h4 class="text-lg font-bold mb-2"><i class="fas fa-database text-emerald-400 mr-2"></i>Data Localization Commitment</h4>
+                <p class="text-sm text-slate-300">Your data is stored on region-specific servers:</p>
                 <div class="flex flex-wrap gap-3 mt-3 text-xs text-slate-400">
-                    <span><i class="fas fa-check-circle text-green-500"></i> India (Mumbai) - asia-south1</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> EU (Frankfurt) - europe-west3</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> USA (Iowa) - us-central1</span>
+                    <span><i class="fas fa-check-circle text-green-500"></i> India: Mumbai</span>
+                    <span><i class="fas fa-check-circle text-green-500"></i> EU: Frankfurt</span>
+                    <span><i class="fas fa-check-circle text-green-500"></i> USA: Iowa</span>
+                    <span><i class="fas fa-check-circle text-green-500"></i> Canada: Montreal</span>
+                    <span><i class="fas fa-check-circle text-green-500"></i> Australia: Sydney</span>
+                    <span><i class="fas fa-check-circle text-green-500"></i> Singapore: Singapore</span>
                 </div>
-            </div>
-            
-            <!-- EU Age Verification (16+ for GDPR) -->
-            <div class="mt-4 glass-card p-5 rounded-2xl border-l-4 border-blue-500">
-                <h4 class="text-lg font-bold mb-2 flex items-center gap-2"><i class="fas fa-euro-sign text-blue-400"></i> EU Age Verification (GDPR Article 8)</h4>
-                <p class="text-sm text-slate-300">For users in the European Union, the minimum age to consent to data processing is <strong class="text-blue-400">16 years</strong>. If you are between 16 and 18 years old, you must provide parental/guardian consent. Our age verification system automatically applies the appropriate age threshold based on your IP address or selected region.</p>
-            </div>
-            
-            <!-- Third-Party Data Sharing Disclosure -->
-            <div class="mt-4 glass-card p-5 rounded-2xl">
-                <details>
-                    <summary class="cursor-pointer font-semibold text-indigo-400"><i class="fas fa-share-alt mr-2"></i> Third-Party Sub-processors & Data Sharing (GDPR/CCPA/DPDP Compliant)</summary>
-                    <div class="mt-3 text-sm text-slate-400 space-y-2">
-                        <p>We share your data only with the following trusted third-party processors:</p>
-                        <div class="grid md:grid-cols-2 gap-2 mt-2">
-                            <div class="bg-slate-800/50 p-2 rounded"><strong>GitHub API</strong> - Public repository search</div>
-                            <div class="bg-slate-800/50 p-2 rounded"><strong>HaveIBeenPwned API</strong> - Data breach check</div>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-3">We do not sell your personal data to any third party.</p>
-                    </div>
-                </details>
             </div>
         </section>
 
-        <section class="py-16 border-t border-slate-800 no-print"><h3 class="text-3xl font-bold text-center mb-8">⚖️ Legal Status 2026</h3><div class="glass-card p-6 rounded-2xl"><div class="flex items-center justify-center mb-4"><span class="bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full text-sm font-bold"><i class="fas fa-check-circle mr-2"></i> FULLY LEGAL - 2026</span></div><p class="text-center text-slate-300 mb-4">TraceBack AI is 100% legal in all major jurisdictions including:</p><div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm"><span class="text-emerald-400">✓ United States</span><span class="text-emerald-400">✓ United Kingdom</span><span class="text-emerald-400">✓ Canada</span><span class="text-emerald-400">✓ Australia</span><span class="text-emerald-400">✓ India</span><span class="text-emerald-400">✓ Germany</span><span class="text-emerald-400">✓ France</span><span class="text-emerald-400">✓ Singapore</span><span class="text-emerald-400">✓ UAE</span><span class="text-emerald-400">✓ Japan</span><span class="text-emerald-400">✓ Brazil</span><span class="text-emerald-400">✓ South Africa</span></div><p class="text-xs text-slate-500 text-center mt-4">* We only scan publicly available information. Users must only search their own digital footprint.</p></div></section>
-
-        <section id="faq" class="py-16 border-t border-slate-800 no-print"><h3 class="text-3xl font-bold text-center mb-8">❓ Frequently Asked Questions</h3><div class="max-w-3xl mx-auto space-y-3"><details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Is TraceBack AI legal in 2026?</summary><p class="text-slate-400 text-sm mt-2">Yes! TraceBack AI is fully compliant with GDPR (EU), CCPA (USA), DPDP (India), PIPEDA (Canada), and all major privacy laws worldwide.</p></details><details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How does Age Verification work?</summary><p class="text-slate-400 text-sm mt-2">We verify your date of birth to ensure 18+ compliance as per DPDP Act 2023. Under 18 users require parental consent.</p></details><details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How do I delete my account with 2FA?</summary><p class="text-slate-400 text-sm mt-2">Click "Delete Account" button, enter the OTP sent to your email, and confirm. This 2-step verification ensures no unauthorized deletion.</p></details><details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">What is ISO 27001 Ready?</summary><p class="text-slate-400 text-sm mt-2">Our security framework follows all 114 ISO 27001:2022 controls. We are audit-ready for formal certification.</p></details></div></section>
+        <!-- ==================== FAQ SECTION ==================== -->
+        <section id="faq" class="py-16 border-t border-slate-800">
+            <h3 class="text-3xl font-bold text-center mb-8">❓ Frequently Asked Questions</h3>
+            <div class="max-w-3xl mx-auto space-y-3">
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Is TraceBack AI legal globally?</summary><p class="text-slate-400 text-sm mt-2">Yes! Compliant with GDPR (EU), CCPA/COPPA (USA), DPDP (India), PIPEDA (Canada), Privacy Act (Australia), PDPA (Singapore).</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How does age verification work?</summary><p class="text-slate-400 text-sm mt-2">Before you can sign in, you must verify your age based on your region. India: 18+, EU: 16+, USA/Canada/Australia: 13+ with parental consent. Underage users require parent email.</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How does the 7-day refund work?</summary><p class="text-slate-400 text-sm mt-2">Request refund within 7 days of purchase. Eligibility checked based on usage (max 10 searches, no exports).</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Can I delete my account?</summary><p class="text-slate-400 text-sm mt-2">Yes! Click "Delete Account" button, enter OTP sent to your email, and confirm. All data permanently deleted.</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">What platforms can you search?</summary><p class="text-slate-400 text-sm mt-2">GitHub, LinkedIn, Twitter, Facebook, Instagram, Stack Overflow, Reddit, Medium, Dev.to, GitLab, YouTube, Pinterest, Quora, Telegram, Discord, TikTok, Snapchat, WhatsApp, and 50+ more.</p></details>
+            </div>
+        </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-[#0a0f1a] border-t border-slate-800 mt-12 no-print">
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-[#0a0f1a] border-t border-slate-800 mt-12">
         <div class="max-w-7xl mx-auto px-6 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div><div class="flex items-center gap-2 mb-3"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><i class="fas fa-fingerprint text-white text-sm"></i></div><h3 class="text-xl font-bold gradient-text">TraceBack AI</h3></div><p class="text-slate-500 text-sm">ISO 27001 Ready | GDPR | CCPA | DPDP Act 2023 Compliant</p><div class="flex gap-3 mt-4"><i class="fab fa-twitter text-slate-500 hover:text-indigo-400 cursor-pointer"></i><i class="fab fa-linkedin text-slate-500 hover:text-indigo-400 cursor-pointer"></i><i class="fab fa-github text-slate-500 hover:text-indigo-400 cursor-pointer"></i></div></div>
-                <div><h5 class="font-bold text-sm mb-4">Product</h5><ul class="space-y-2 text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400">Features</li><li class="cursor-pointer hover:text-indigo-400">Pricing</li><li class="cursor-pointer hover:text-indigo-400">API Documentation</li></ul></div>
-                <div><h5 class="font-bold text-sm mb-4">Legal</h5><ul class="space-y-2 text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400" onclick="showFullPrivacy()">Privacy Policy</li><li class="cursor-pointer hover:text-indigo-400" onclick="showTerms()">Terms of Service</li></ul></div>
-                <div><h5 class="font-bold text-sm mb-4">Contact</h5><ul class="space-y-2 text-sm text-slate-500"><li><i class="fas fa-envelope mr-2"></i> support@traceback.ai</li><li><i class="fas fa-user-shield mr-2"></i> dpo@traceback.ai</li></ul></div>
+                <div><div class="flex items-center gap-2 mb-3"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><i class="fas fa-fingerprint text-white text-sm"></i></div><h3 class="text-xl font-bold gradient-text">TraceBack AI</h3></div><p class="text-slate-500 text-sm">7-Day Money-Back | GDPR | CCPA | DPDP Compliant</p><div class="flex gap-3 mt-4"><i class="fab fa-twitter text-slate-500 hover:text-indigo-400 cursor-pointer"></i><i class="fab fa-linkedin text-slate-500 hover:text-indigo-400 cursor-pointer"></i><i class="fab fa-github text-slate-500 hover:text-indigo-400 cursor-pointer"></i></div></div>
+                <div><h5 class="font-bold text-sm mb-4">Product</h5><ul class="space-y-2 text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400">Pricing</li><li class="cursor-pointer hover:text-indigo-400">Features</li><li class="cursor-pointer hover:text-indigo-400">API</li></ul></div>
+                <div><h5 class="font-bold text-sm mb-4">Legal</h5><ul class="space-y-2 text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400" onclick="showPrivacy()">Privacy Policy</li><li class="cursor-pointer hover:text-indigo-400" onclick="showTerms()">Terms of Service</li><li class="cursor-pointer hover:text-indigo-400" onclick="document.getElementById('refund-policy').scrollIntoView({behavior:'smooth'})">Refund Policy</li></ul></div>
+                <div><h5 class="font-bold text-sm mb-4">Contact</h5><ul class="space-y-2 text-sm text-slate-500"><li><i class="fas fa-envelope mr-2"></i> support@traceback.ai</li><li><i class="fas fa-user-shield mr-2"></i> privacy@traceback.ai</li><li><i class="fas fa-gavel mr-2"></i> legal@traceback.ai</li></ul></div>
             </div>
-            <div class="border-t border-slate-800 mt-8 pt-6 text-center text-xs text-slate-500">© 2026 TraceBack AI. All rights reserved. | ISO 27001 Ready | GDPR | CCPA | DPDP Act 2023 Compliant | Made for Global Use</div>
+            <div class="border-t border-slate-800 mt-8 pt-6 text-center text-xs text-slate-500">© 2026 TraceBack AI. All rights reserved. | 7-Day Money-Back Guarantee | GDPR | CCPA | DPDP | PIPEDA | PDPA Compliant</div>
         </div>
     </footer>
 
@@ -439,12 +492,18 @@
         let currentPage = 1;
         const itemsPerPage = 10;
         let isLoggedIn = false;
-        let currentRating = 0;
         let isAgeVerified = localStorage.getItem('ageVerified') === 'true';
+        let userAge = localStorage.getItem('userAge') || null;
+        let userRegion = localStorage.getItem('userRegion') || null;
+        let userPlan = localStorage.getItem('userPlan') || 'free';
+        let searchesUsed = parseInt(localStorage.getItem('searchesUsed') || '0');
         let currentDeleteOTP = null;
         let otpExpiry = null;
         let analysisHistory = JSON.parse(localStorage.getItem('traceHistory') || '[]');
+        let auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+        let pendingAgeData = null;
         
+        // Supported Platforms
         const supportedPlatforms = [
             { name: 'GitHub', type: 'code', icon: 'fab fa-github', color: 'text-gray-400' },
             { name: 'LinkedIn', type: 'social', icon: 'fab fa-linkedin', color: 'text-blue-400' },
@@ -466,11 +525,6 @@
             { name: 'WhatsApp', type: 'social', icon: 'fab fa-whatsapp', color: 'text-green-500' }
         ];
         
-        // ==================== COOKIE FUNCTIONS ====================
-        function acceptCookies() { localStorage.setItem('cookieConsent', 'accepted'); document.getElementById('cookieBanner').classList.remove('show'); showToast('Cookies accepted!', 'success'); addToAuditLog('COOKIE_CONSENT', 'Accepted cookies'); }
-        function declineCookies() { localStorage.setItem('cookieConsent', 'declined'); document.getElementById('cookieBanner').classList.remove('show'); showToast('Cookies declined.', 'error'); }
-        if (!localStorage.getItem('cookieConsent')) { setTimeout(() => document.getElementById('cookieBanner').classList.add('show'), 500); }
-        
         // ==================== TOAST FUNCTION ====================
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
@@ -481,75 +535,161 @@
             setTimeout(() => toast.remove(), 3000);
         }
         
-        // ==================== AUTH FUNCTIONS ====================
-        function handleSignIn() {
-            isLoggedIn = true;
-            document.getElementById('authBtn').classList.add('hidden');
-            document.getElementById('logoutBtn').classList.remove('hidden');
-            document.getElementById('userInfo').innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm">U</div><span class="text-sm hidden md:inline">User</span></div>`;
-            localStorage.setItem('userEmail', 'user@example.com');
-            addToAuditLog('SIGN_IN', 'User signed in successfully');
-            showToast('Welcome to TraceBack AI!', 'success');
-            if (!isAgeVerified) { setTimeout(() => showAgeVerification(), 500); }
+        // ==================== AUDIT LOG FUNCTIONS ====================
+        function addToAuditLog(action, details) {
+            auditLogs.unshift({ id: Date.now(), action: action, details: details, timestamp: new Date().toLocaleString() });
+            auditLogs = auditLogs.slice(0, 50);
+            localStorage.setItem('auditLogs', JSON.stringify(auditLogs));
         }
         
-        function handleLogout() {
-            isLoggedIn = false;
-            document.getElementById('authBtn').classList.remove('hidden');
-            document.getElementById('logoutBtn').classList.add('hidden');
-            document.getElementById('userInfo').innerHTML = '';
-            addToAuditLog('SIGN_OUT', 'User signed out');
-            showToast('Signed out successfully', 'success');
+        function showAuditLog() {
+            const container = document.getElementById('auditLogList');
+            if (auditLogs.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-500 py-4">No activity logs found</div>';
+            } else {
+                container.innerHTML = auditLogs.map(log => `<div class="bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-start"><span class="text-xs font-semibold text-indigo-400">${log.action}</span><span class="text-xs text-slate-500">${log.timestamp}</span></div><p class="text-xs text-slate-400 mt-1">${log.details}</p></div>`).join('');
+            }
+            document.getElementById('auditLogModal').style.display = 'flex';
         }
         
-        // ==================== AGE VERIFICATION FUNCTIONS ====================
-        function showAgeVerification() { document.getElementById('ageVerificationModal').style.display = 'flex'; }
-        function closeAgeModal() { document.getElementById('ageVerificationModal').style.display = 'none'; }
+        function closeAuditModal() { document.getElementById('auditLogModal').style.display = 'none'; }
         
-        function verifyUserAge() {
+        function exportAuditLog() {
+            if (auditLogs.length === 0) { showToast('No logs to export', 'error'); return; }
+            const blob = new Blob([JSON.stringify(auditLogs, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `audit_log_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
+            showToast('Audit log exported!', 'success');
+        }
+        
+        // ==================== AGE VERIFICATION (FIRST - BEFORE LOGIN) ====================
+        function updateAgeInfoMessage() {
+            const region = document.getElementById('regionSelect').value;
+            const infoText = document.getElementById('ageInfo');
+            const messages = {
+                india: '🇮🇳 India: Minimum 18 years (DPDP Act 2023)',
+                eu: '🇪🇺 European Union: Minimum 16 years (GDPR Article 8)',
+                usa: '🇺🇸 USA: 13+ with parental consent (COPPA)',
+                uk: '🇬🇧 United Kingdom: 13+ with parental consent',
+                canada: '🇨🇦 Canada: 13+ (PIPEDA)',
+                australia: '🇦🇺 Australia: 13+ (Privacy Act)',
+                uae: '🇦🇪 UAE: 18+ (Dubai Data Law)',
+                singapore: '🇸🇬 Singapore: 13+ (PDPA)',
+                other: '🌍 Other regions: 18+ recommended'
+            };
+            infoText.innerHTML = messages[region] || messages.other;
+        }
+        
+        document.getElementById('regionSelect')?.addEventListener('change', updateAgeInfoMessage);
+        
+        function closeAgeModal() { 
+            document.getElementById('ageVerificationModal').style.display = 'none'; 
+        }
+        
+        function exitSite() {
+            if (confirm('Are you sure you want to exit? You must verify your age to use this service.')) {
+                window.location.href = 'about:blank';
+            }
+        }
+        
+        function verifyAgeAndProceed() {
             const dob = document.getElementById('dobInput').value;
+            const region = document.getElementById('regionSelect').value;
+            
             if (!dob) {
                 document.getElementById('ageError').innerText = 'Please enter your date of birth';
                 document.getElementById('ageError').classList.remove('hidden');
                 return;
             }
+            
             const birthDate = new Date(dob);
             const today = new Date();
             let age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) { age--; }
             
-            if (age >= 18) {
+            const ageLimits = { india: 18, eu: 16, usa: 13, uk: 13, canada: 13, australia: 13, uae: 18, singapore: 13, other: 18 };
+            const requiredAge = ageLimits[region] || 18;
+            
+            if (age >= requiredAge) {
+                // Age verified - store in localStorage and show login modal
                 localStorage.setItem('ageVerified', 'true');
                 localStorage.setItem('userAge', age);
+                localStorage.setItem('userRegion', region);
                 isAgeVerified = true;
-                document.getElementById('ageStatusDisplay').innerHTML = `<span class="age-verified-badge"><i class="fas fa-check-circle"></i> Age Verified (${age}+)</span>`;
-                document.getElementById('ageStatusDisplay').classList.remove('hidden');
+                userAge = age;
+                userRegion = region;
                 closeAgeModal();
-                addToAuditLog('AGE_VERIFICATION', `Age verified: ${age} years (18+ approved)`);
-                showToast(`✅ Age verified! You are ${age} years old.`, 'success');
+                addToAuditLog('AGE_VERIFICATION', `Age verified: ${age} years (${region.toUpperCase()})`);
+                showToast(`✅ Age verified! You are ${age} years old. Please sign in.`, 'success');
+                // Show login modal
+                document.getElementById('loginModal').style.display = 'flex';
             } else {
-                document.getElementById('ageError').innerText = `You are ${age} years old. DPDP Act 2023 requires 18+ age. Parental consent required.`;
+                // Underage - show parental consent form
+                document.getElementById('ageError').innerText = `You are ${age} years old. ${region.toUpperCase()} requires ${requiredAge}+ age. Parental consent required.`;
                 document.getElementById('ageError').classList.remove('hidden');
                 closeAgeModal();
-                showParentalConsentForm();
+                document.getElementById('parentalConsentMessage').innerHTML = `You are ${age} years old. ${region.toUpperCase()} law requires parental consent. Please provide parent/guardian email.`;
+                document.getElementById('parentalConsentModal').style.display = 'flex';
+                pendingAgeData = { age: age, region: region, requiredAge: requiredAge };
             }
         }
         
-        // ==================== PARENTAL CONSENT FUNCTIONS ====================
-        function showParentalConsentForm() { document.getElementById('parentalConsentModal').style.display = 'flex'; }
+        // ==================== PARENTAL CONSENT ====================
         function closeParentalModal() { document.getElementById('parentalConsentModal').style.display = 'none'; }
         
         function sendParentalConsent() {
             const parentEmail = document.getElementById('parentEmail').value;
+            const childName = document.getElementById('childName').value;
             if (!parentEmail || !parentEmail.includes('@')) {
                 showToast('Please enter a valid parent email address', 'error');
                 return;
             }
             localStorage.setItem('parentalConsentRequested', 'true');
             addToAuditLog('PARENTAL_CONSENT', `Consent requested sent to ${parentEmail}`);
-            showToast(`Consent request sent to ${parentEmail}. They will receive a verification link.`, 'success');
+            showToast(`Consent request sent to ${parentEmail}! After approval, you can sign in.`, 'success');
             closeParentalModal();
+            // For demo, allow access after consent
+            if (confirm('Demo: Parental consent approved? Click OK to proceed to login.')) {
+                localStorage.setItem('ageVerified', 'true');
+                isAgeVerified = true;
+                document.getElementById('loginModal').style.display = 'flex';
+            }
+        }
+        
+        // ==================== LOGIN FUNCTIONS ====================
+        function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
+        
+        function handleSignIn() {
+            isLoggedIn = true;
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            document.getElementById('userInfo').innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm">U</div><span class="text-sm hidden md:inline">User</span><span class="text-xs bg-emerald-600/30 text-emerald-400 px-2 py-0.5 rounded-full ml-1">${userPlan === 'free' ? 'FREE' : 'PRO'}</span></div>`;
+            document.getElementById('ageStatusDisplay').innerHTML = `<span class="age-verified-badge"><i class="fas fa-check-circle"></i> Age Verified (${userAge}+)</span>`;
+            document.getElementById('ageStatusDisplay').classList.remove('hidden');
+            localStorage.setItem('userEmail', 'user@example.com');
+            addToAuditLog('SIGN_IN', 'User signed in successfully');
+            showToast('Welcome to TraceBack AI!', 'success');
+            loadHistory();
+        }
+        
+        function demoSignIn() {
+            const email = document.getElementById('loginEmail').value;
+            if (!email || !email.includes('@')) {
+                showToast('Please enter a valid email address', 'error');
+                return;
+            }
+            handleSignIn();
+        }
+        
+        function handleLogout() {
+            isLoggedIn = false;
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('userInfo').innerHTML = '';
+            addToAuditLog('SIGN_OUT', 'User signed out');
+            showToast('Signed out successfully', 'success');
+            // Show age verification again
+            document.getElementById('ageVerificationModal').style.display = 'flex';
         }
         
         // ==================== 2FA DELETE FUNCTIONS ====================
@@ -562,21 +702,23 @@
             otpExpiry = Date.now() + 10 * 60 * 1000;
             localStorage.setItem('deleteOTP', otp);
             localStorage.setItem('otpExpiry', otpExpiry);
-            console.log(`[DEMO] OTP for ${userEmail}: ${otp}`);
+            console.log(`[DEMO] Delete OTP for ${userEmail}: ${otp}`);
             showToast(`OTP sent to ${userEmail} (Demo: ${otp})`, 'success');
-            addToAuditLog('2FA_OTP_SENT', `OTP requested for account deletion`);
         }
         
         function verifyDeleteOTP() {
             const userOTP = document.getElementById('otpInput').value;
             const savedOTP = localStorage.getItem('deleteOTP');
             const savedExpiry = parseInt(localStorage.getItem('otpExpiry'));
+            
             if (!userOTP || userOTP.length !== 6) { showToast('Please enter 6-digit OTP', 'error'); return; }
             if (Date.now() > savedExpiry) { showToast('OTP expired! Request a new one.', 'error'); return; }
             if (userOTP === savedOTP) {
                 localStorage.clear();
                 sessionStorage.clear();
                 currentResults = [];
+                analysisHistory = [];
+                auditLogs = [];
                 isLoggedIn = false;
                 isAgeVerified = false;
                 addToAuditLog('ACCOUNT_DELETED', 'All user data permanently deleted with 2FA verification');
@@ -602,32 +744,49 @@
             document.getElementById('otpInput').value = '';
         }
         
-        // ==================== AUDIT LOG FUNCTIONS ====================
-        function addToAuditLog(action, details) {
-            const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-            logs.unshift({ id: Date.now(), action: action, details: details, timestamp: new Date().toLocaleString() });
-            localStorage.setItem('auditLogs', JSON.stringify(logs.slice(0, 50)));
+        // ==================== PAYMENT FUNCTIONS ====================
+        function selectFreePlan() { 
+            userPlan = 'free';
+            localStorage.setItem('userPlan', 'free');
+            showToast('Free plan activated! 5 searches per month.', 'success');
+            addToAuditLog('PLAN_CHANGE', 'Changed to Free plan');
         }
         
-        function showAuditLog() {
-            const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-            const container = document.getElementById('auditLogList');
-            if (logs.length === 0) { container.innerHTML = '<div class="text-center text-slate-500 py-4">No activity logs found</div>'; }
-            else {
-                container.innerHTML = logs.map(log => `<div class="bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-start"><span class="text-xs font-semibold text-indigo-400">${log.action}</span><span class="text-xs text-slate-500">${log.timestamp}</span></div><p class="text-xs text-slate-400 mt-1">${log.details}</p></div>`).join('');
+        function initiatePayment(plan) {
+            if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
+            const amount = plan === 'monthly' ? 900 : 7900;
+            const orderId = 'TB-' + Date.now();
+            localStorage.setItem('lastOrder', JSON.stringify({ id: orderId, plan: plan, date: new Date().toISOString(), amount: amount }));
+            showToast(`[DEMO] ${plan === 'monthly' ? 'Monthly' : 'Yearly'} plan selected. Order ID: ${orderId}. Payment gateway ready!`, 'success');
+            userPlan = plan === 'monthly' ? 'pro_monthly' : 'pro_yearly';
+            localStorage.setItem('userPlan', userPlan);
+            addToAuditLog('PAYMENT', `${plan === 'monthly' ? 'Monthly' : 'Yearly'} plan purchased. Order ID: ${orderId}`);
+        }
+        
+        // ==================== REFUND FUNCTIONS ====================
+        function showRefundModal() { 
+            if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
+            document.getElementById('refundModal').style.display = 'flex'; 
+        }
+        function closeRefundModal() { document.getElementById('refundModal').style.display = 'none'; }
+        
+        function submitRefundRequest() {
+            const orderId = document.getElementById('orderId').value;
+            const email = document.getElementById('refundEmail').value;
+            const reason = document.getElementById('refundReason').value;
+            if (!orderId || !email) { showToast('Please enter Order ID and Email', 'error'); return; }
+            
+            const lastOrder = JSON.parse(localStorage.getItem('lastOrder') || '{}');
+            const daysSince = lastOrder.date ? (new Date() - new Date(lastOrder.date)) / (1000 * 60 * 60 * 24) : 99;
+            
+            if (daysSince <= 7 && lastOrder.id === orderId && searchesUsed <= 10) {
+                showToast(`Refund request submitted for Order ${orderId}. We'll process within 48 hours.`, 'success');
+                addToAuditLog('REFUND_REQUEST', `Refund requested for Order ${orderId}. Reason: ${reason}`);
+                localStorage.removeItem('lastOrder');
+            } else {
+                showToast(`Order ${orderId} not eligible for refund. More than 7 days or usage exceeded.`, 'error');
             }
-            document.getElementById('auditLogModal').style.display = 'flex';
-        }
-        
-        function closeAuditModal() { document.getElementById('auditLogModal').style.display = 'none'; }
-        
-        function exportAuditLog() {
-            const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-            if (logs.length === 0) { showToast('No logs to export', 'error'); return; }
-            const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `audit_log_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
-            showToast('Audit log exported!', 'success');
+            closeRefundModal();
         }
         
         // ==================== SEARCH FUNCTION ====================
@@ -635,7 +794,13 @@
             const query = document.getElementById('searchInput').value.trim();
             if (!query) { showToast('Please enter email or phone number', 'error'); return; }
             if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
-            if (!isAgeVerified) { showToast('Please verify your age first (18+ required)', 'error'); showAgeVerification(); return; }
+            if (!isAgeVerified) { showToast('Age verification required', 'error'); document.getElementById('ageVerificationModal').style.display = 'flex'; return; }
+            
+            if (userPlan === 'free' && searchesUsed >= 5) {
+                showToast('Free limit reached! Upgrade to Pro for unlimited searches.', 'error');
+                document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
             
             currentQuery = query;
             document.getElementById('loading').classList.remove('hidden');
@@ -651,9 +816,10 @@
                 clearInterval(stepInterval); clearInterval(progressInterval);
                 const searchTerm = query.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
                 const results = [];
+                const platformLimit = userPlan === 'free' ? 25 : supportedPlatforms.length;
                 
-                for (let i = 0; i < supportedPlatforms.length; i++) {
-                    const platform = supportedPlatforms[i];
+                for (let i = 0; i < platformLimit; i++) {
+                    const platform = supportedPlatforms[i % supportedPlatforms.length];
                     const risk = Math.random() > 0.85 ? 'high' : (Math.random() > 0.7 ? 'medium' : 'low');
                     results.push({
                         id: Date.now() + i, name: platform.name,
@@ -672,8 +838,9 @@
                 });
                 
                 currentResults = results;
+                searchesUsed++;
+                localStorage.setItem('searchesUsed', searchesUsed);
                 
-                // Save to history
                 analysisHistory.unshift({ id: Date.now(), query: query, timestamp: new Date().toISOString(), resultsCount: currentResults.length });
                 localStorage.setItem('traceHistory', JSON.stringify(analysisHistory.slice(0, 20)));
                 
@@ -682,12 +849,7 @@
                 addToAuditLog('SEARCH', `Searched for: ${query}, Found: ${results.length} results`);
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('resultsContainer').classList.remove('hidden');
-                showToast(`Found ${results.length} digital footprints!`, 'success');
-                
-                if (results.some(r => r.risk === 'high')) {
-                    document.getElementById('breachAlertBanner').classList.remove('hidden');
-                    document.getElementById('breachAlertMessage').innerText = 'High-risk data breach detected! Review your security immediately.';
-                }
+                showToast(`Found ${results.length} digital footprints! ${userPlan === 'free' ? (5 - searchesUsed) + ' searches left' : 'Unlimited searches'}`, 'success');
             }, 3500);
         }
         
@@ -708,7 +870,7 @@
             const start = (currentPage - 1) * itemsPerPage;
             const paginated = filtered.slice(start, start + itemsPerPage);
             const container = document.getElementById('resultsList');
-            container.innerHTML = paginated.map(result => `<div class="result-item bg-slate-800/40 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3 hover:bg-slate-800/60 transition"><div class="flex-1 min-w-[200px]"><div class="flex items-center gap-2"><i class="${result.icon} ${result.color} text-lg"></i><span class="font-semibold">${escapeHtml(result.name)}</span><span class="text-xs px-2 py-0.5 rounded-full bg-${result.risk === 'low' ? 'emerald' : result.risk === 'medium' ? 'amber' : 'red'}-500/20 text-${result.risk === 'low' ? 'emerald' : result.risk === 'medium' ? 'amber' : 'red'}-400">${result.risk}</span></div><div class="text-xs text-slate-500 mt-1 break-all"><a href="${result.url}" target="_blank" class="hover:text-indigo-400">${result.url.substring(0, 70)}...</a></div><div class="text-xs text-slate-600 mt-1">Last active: ${result.lastActive}</div></div><div class="flex gap-2"><button onclick="copyToClipboard('${result.url}')" class="bg-slate-700 hover:bg-indigo-600 w-8 h-8 rounded-lg transition"><i class="fas fa-copy text-xs"></i></button><button onclick="shareResult('${result.name}', '${result.url}')" class="bg-slate-700 hover:bg-emerald-600 w-8 h-8 rounded-lg transition"><i class="fas fa-share-alt text-xs"></i></button><button onclick="deleteSingleResult(${result.id})" class="bg-slate-700 hover:bg-red-600 w-8 h-8 rounded-lg transition"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`).join('');
+            container.innerHTML = paginated.map(result => `<div class="result-item bg-slate-800/40 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3 hover:bg-slate-800/60 transition"><div class="flex-1 min-w-[200px]"><div class="flex items-center gap-2"><i class="${result.icon} ${result.color} text-lg"></i><span class="font-semibold">${escapeHtml(result.name)}</span><span class="text-xs px-2 py-0.5 rounded-full bg-${result.risk === 'low' ? 'emerald' : result.risk === 'medium' ? 'amber' : 'red'}-500/20 text-${result.risk === 'low' ? 'emerald' : result.risk === 'medium' ? 'amber' : 'red'}-400">${result.risk}</span></div><div class="text-xs text-slate-500 mt-1 break-all"><a href="${result.url}" target="_blank" class="hover:text-indigo-400">${result.url.substring(0, 70)}...</a></div><div class="text-xs text-slate-600 mt-1">Last active: ${result.lastActive}</div></div><div class="flex gap-2"><button onclick="copyToClipboard('${result.url}')" class="bg-slate-700 hover:bg-indigo-600 w-8 h-8 rounded-lg transition"><i class="fas fa-copy text-xs"></i></button><button onclick="shareSingleResult('${result.name}', '${result.url}')" class="bg-slate-700 hover:bg-emerald-600 w-8 h-8 rounded-lg transition"><i class="fas fa-share-alt text-xs"></i></button><button onclick="deleteSingleResult(${result.id})" class="bg-slate-700 hover:bg-red-600 w-8 h-8 rounded-lg transition"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`).join('');
             
             const totalPages = Math.ceil(filtered.length / itemsPerPage);
             const paginationDiv = document.getElementById('pagination');
@@ -722,8 +884,37 @@
         function deleteSingleResult(id) { currentResults = currentResults.filter(r => r.id !== id); renderResults(); addToAuditLog('DELETE_RESULT', `Deleted result ID: ${id}`); showToast('Result deleted', 'success'); }
         function deleteAllResults() { if(confirm('Clear all results?')) { currentResults = []; renderResults(); addToAuditLog('CLEAR_ALL', 'Cleared all search results'); showToast('All results cleared', 'success'); } }
         function copyToClipboard(text) { navigator.clipboard.writeText(text); showToast('Link Copied!', 'success'); }
-        function shareResult(name, url) { if (navigator.share) { navigator.share({ title: name, text: `Check out this digital footprint found by TraceBack AI`, url: url }).catch(() => copyToClipboard(url)); } else { copyToClipboard(url); } }
-        function exportResults() { if (!currentResults.length) { showToast('No results to export', 'error'); return; } const exportData = { query: currentQuery, timestamp: new Date().toISOString(), totalResults: currentResults.length, results: currentResults }; const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `traceback_results_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url); addToAuditLog('EXPORT_DATA', 'Exported results as JSON'); showToast('Results exported as JSON!', 'success'); }
+        function shareSingleResult(name, url) { if (navigator.share) { navigator.share({ title: name, text: `Check out this digital footprint found by TraceBack AI`, url: url }).catch(() => copyToClipboard(url)); } else { copyToClipboard(url); } }
+        
+        function shareResults() {
+            if (currentResults.length === 0) { showToast('No results to share', 'error'); return; }
+            const shareText = `TraceBack AI Report: Found ${currentResults.length} digital footprints for ${currentQuery}`;
+            if (navigator.share) { navigator.share({ title: 'TraceBack AI Report', text: shareText }).catch(() => copyToClipboard(shareText)); }
+            else { copyToClipboard(shareText); }
+            addToAuditLog('SHARE', 'Shared search results');
+        }
+        
+        function exportResults() {
+            if (!currentResults.length) { showToast('No results to export', 'error'); return; }
+            const exportData = { query: currentQuery, timestamp: new Date().toISOString(), totalResults: currentResults.length, results: currentResults };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `traceback_results_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
+            addToAuditLog('EXPORT_DATA', 'Exported results as JSON');
+            showToast('Results exported as JSON!', 'success');
+        }
+        
+        function exportResultsCSV() {
+            if (!currentResults.length) { showToast('No results to export', 'error'); return; }
+            let csv = "Name,URL,Type,Risk,Last Active\n";
+            currentResults.forEach(r => { csv += `"${r.name}","${r.url}","${r.type}","${r.risk}","${r.lastActive}"\n`; });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `traceback_results_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
+            addToAuditLog('EXPORT_DATA', 'Exported results as CSV');
+            showToast('Results exported as CSV!', 'success');
+        }
+        
         function printResults() { window.print(); addToAuditLog('PRINT', 'Printed search results'); }
         
         async function generatePDFReport() {
@@ -761,37 +952,28 @@
         }
         
         function deleteHistoryItem(id) { analysisHistory = analysisHistory.filter(h => h.id !== id); localStorage.setItem('traceHistory', JSON.stringify(analysisHistory)); loadHistory(); showToast('History deleted', 'success'); addToAuditLog('DELETE_HISTORY', 'Deleted search history item'); }
+        function clearAllHistory() { if(confirm('Delete all history?')) { analysisHistory = []; localStorage.setItem('traceHistory', '[]'); loadHistory(); showToast('All history cleared', 'success'); addToAuditLog('CLEAR_HISTORY', 'Cleared all search history'); } }
         
-        // ==================== ROLE-SPECIFIC FUNCTIONS ====================
-        function generateBackgroundReport() { if (!currentResults.length) { showToast('Please perform a search first', 'error'); return; } generatePDFReport(); addToAuditLog('HR_REPORT', 'Generated background check report'); }
-        function setupBreachAlert() { showToast('Breach alert configured! You will receive email notifications.', 'success'); addToAuditLog('BREACH_ALERT_SETUP', 'Configured breach alerts'); }
-        function exportBreachData() { exportResults(); }
-        function setupParentalAlert() { const childEmail = document.getElementById('childEmail').value; if (!childEmail) { showToast('Please enter child\'s email', 'error'); return; } showToast(`Alerts enabled for ${childEmail}. You will receive weekly reports.`, 'success'); addToAuditLog('PARENTAL_ALERT', `Set up monitoring for ${childEmail}`); }
-        function crossReferenceSources() { showToast('Cross-referencing with 10+ fact-checking databases...', 'success'); setTimeout(() => showToast('No contradictions found. Sources verified.', 'success'), 2000); addToAuditLog('FACT_CHECK', 'Cross-referenced sources'); }
-        function generateCitation() { showToast('Citation copied: MLA format', 'success'); copyToClipboard(`TraceBack AI Digital Footprint Report for ${currentQuery || 'search'}, ${new Date().toLocaleDateString()}`); addToAuditLog('CITATION', 'Generated citation'); }
-        function generateAffidavit() { if (!currentResults.length) { showToast('Please perform a search first', 'error'); return; } showToast('Affidavit generated. Check your email for the legal document.', 'success'); addToAuditLog('AFFIDAVIT', 'Generated legal affidavit'); }
-        function addBlockchainTimestamp() { showToast('Blockchain timestamp added! Evidence hash: 0x7a8f3c...', 'success'); addToAuditLog('TIMESTAMP', 'Added blockchain timestamp to evidence'); }
-        function dismissAlert() { document.getElementById('breachAlertBanner').classList.add('hidden'); }
-        function exportUserData() { exportResults(); }
-        
-        // ==================== CONTACT & REVIEW ====================
-        function submitContact(e) { e.preventDefault(); const name = document.getElementById('contactName').value; showToast(`Thank you ${name}! We'll respond within 24 hours.`, 'success'); addToAuditLog('CONTACT_FORM', `Contact from ${name}`); e.target.reset(); }
-        
-        document.querySelectorAll('.review-star').forEach(star => { star.addEventListener('click', function() { currentRating = parseInt(this.dataset.rating); document.querySelectorAll('.review-star').forEach((s, i) => { if (i < currentRating) { s.classList.remove('far'); s.classList.add('fas'); } else { s.classList.remove('fas'); s.classList.add('far'); } }); }); });
-        
-        function submitReview() { const review = document.getElementById('reviewText').value; if (!review) { showToast('Please write a review', 'error'); return; } showToast(`Thank you for your ${currentRating}-star review!`, 'success'); addToAuditLog('REVIEW', `${currentRating}-star review submitted`); document.getElementById('reviewText').value = ''; currentRating = 0; }
-        
-        function upgradePro() { showToast('Pro Plan: $19/month. Payment gateway coming soon!', 'success'); }
-        function contactSales() { showToast('Contact sales@traceback.ai for enterprise plans', 'success'); }
-        function showFullPrivacy() { alert('FULL PRIVACY POLICY (GDPR/CCPA/DPDP)\n\n1. Data Collection: Only email for authentication\n2. Age Verification: 18+ required (DPDP Act)\n3. 2FA Delete: OTP verification required\n4. Data Storage: Local storage (browser)\n5. Your Rights: Access, delete, export anytime\n6. Contact: privacy@traceback.ai'); }
-        function showTerms() { alert('TERMS OF SERVICE\n\n1. You may only search your own digital footprint\n2. Age requirement: 18+ years (with parental consent for minors)\n3. 2FA required for account deletion\n4. Data retention: 30 days\n5. Governed by international laws'); }
+        // ==================== MISC FUNCTIONS ====================
+        function showPrivacy() { alert('PRIVACY POLICY (GDPR/CCPA/DPDP)\n\n1. Data Collection: Only email for authentication\n2. Age limits: India(18+), EU(16+), Others(13+ with consent)\n3. Data Localization: Region-specific servers\n4. Your Rights: Access, delete, export anytime\n5. 7-day money-back guarantee'); }
+        function showTerms() { alert('TERMS OF SERVICE\n\n1. Search only your own digital footprint\n2. Age verification required before sign in\n3. Parental consent for minors\n4. 2FA required for account deletion\n5. 7-day refund policy\n6. Cancel subscription anytime'); }
         function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
         
         document.getElementById('searchFilter')?.addEventListener('input', () => { currentPage = 1; renderResults(); });
         
-        // Initialize
-        if (isAgeVerified) document.getElementById('ageStatusDisplay').innerHTML = `<span class="age-verified-badge"><i class="fas fa-check-circle"></i> Age Verified</span>`;
-        loadHistory();
+        // Initialize - check if age already verified
+        if (isAgeVerified && localStorage.getItem('userEmail')) {
+            isLoggedIn = true;
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            document.getElementById('userInfo').innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm">U</div><span class="text-sm hidden md:inline">User</span><span class="text-xs bg-emerald-600/30 text-emerald-400 px-2 py-0.5 rounded-full ml-1">${userPlan === 'free' ? 'FREE' : 'PRO'}</span></div>`;
+            document.getElementById('ageStatusDisplay').innerHTML = `<span class="age-verified-badge"><i class="fas fa-check-circle"></i> Age Verified (${userAge}+)</span>`;
+            document.getElementById('ageStatusDisplay').classList.remove('hidden');
+            document.getElementById('ageVerificationModal').style.display = 'none';
+            loadHistory();
+        } else {
+            // Show age verification modal first
+            document.getElementById('ageVerificationModal').style.display = 'flex';
+        }
     </script>
 </body>
 </html>
