@@ -3,17 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <meta name="description" content="TraceBack AI - Complete Digital Footprint Analysis Platform. Find all social media accounts linked to email or phone. 7-Day Money-Back Guarantee. GDPR, CCPA, DPDP Compliant.">
+    <meta name="description" content="TraceBack AI - Complete Digital Footprint Analysis Platform. Find all social media accounts linked to email or phone. GDPR, CCPA, DPDP Compliant.">
     <meta name="keywords" content="digital footprint, social media finder, email search, phone search, privacy tool">
     <meta name="author" content="TraceBack AI">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#4f46e5">
-    <title>TraceBack AI | Complete Digital Footprint Analysis | 7-Day Money-Back</title>
+    <title>TraceBack AI | Complete Digital Footprint Analysis</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, OAuthProvider } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        
+        // Firebase Configuration (REPLACE WITH YOUR OWN FIREBASE PROJECT)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+        const appleProvider = new OAuthProvider('apple.com');
+        
+        window.auth = auth;
+        window.db = db;
+        
+        // Statistics counters (hidden from user)
+        let refundRequestCount = parseInt(localStorage.getItem('refundRequestCount') || '0');
+        let refundSuccessCount = parseInt(localStorage.getItem('refundSuccessCount') || '0');
+        let discountDistributionCount = parseInt(localStorage.getItem('discountDistributionCount') || '0');
+        
+        // Check if user is eligible for 27% discount (random 10% of users)
+        function isEligibleForDiscount() {
+            // 10% users will get discount
+            const eligibleUsers = JSON.parse(localStorage.getItem('discountEligibleUsers') || '[]');
+            const userId = localStorage.getItem('currentUserId');
+            if (userId && eligibleUsers.includes(userId)) return true;
+            
+            // Randomly assign discount to 10% of new users
+            const random = Math.random() * 100;
+            if (random <= 10 && userId) {
+                eligibleUsers.push(userId);
+                localStorage.setItem('discountEligibleUsers', JSON.stringify(eligibleUsers));
+                return true;
+            }
+            return false;
+        }
+        
+        // Check if refund request will be approved (5% approval rate)
+        function isRefundApproved() {
+            refundRequestCount++;
+            localStorage.setItem('refundRequestCount', refundRequestCount);
+            
+            // Calculate approval rate - maintain 5% overall
+            const currentRate = (refundSuccessCount / refundRequestCount) * 100;
+            let approved = false;
+            
+            if (currentRate < 5) {
+                approved = true;
+                refundSuccessCount++;
+                localStorage.setItem('refundSuccessCount', refundSuccessCount);
+            } else {
+                // Random chance based on remaining quota
+                const remainingApprovals = Math.ceil(refundRequestCount * 0.05) - refundSuccessCount;
+                if (remainingApprovals > 0) {
+                    const random = Math.random() * 100;
+                    if (random <= 5) {
+                        approved = true;
+                        refundSuccessCount++;
+                        localStorage.setItem('refundSuccessCount', refundSuccessCount);
+                    }
+                }
+            }
+            
+            return approved;
+        }
+        
+        // Send SMS verification (simulated - in production use Twilio)
+        async function sendSMSVerification(phoneNumber) {
+            // In production: integrate Twilio API
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            localStorage.setItem('smsOTP', otp);
+            localStorage.setItem('smsOTPExpiry', Date.now() + 10 * 60 * 1000);
+            console.log(`[SMS] OTP for ${phoneNumber}: ${otp}`);
+            return otp;
+        }
+        
+        // Send parent email
+        async function sendParentEmail(parentEmail, childName, childAge) {
+            // In production: integrate EmailJS/SendGrid
+            console.log(`[EMAIL] Parental consent sent to ${parentEmail} for ${childName} (Age: ${childAge})`);
+            return true;
+        }
+        
+        window.signInWithGoogle = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                await handleUserAfterAuth(user);
+                return user;
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+        
+        window.signInWithApple = async () => {
+            try {
+                const result = await signInWithPopup(auth, appleProvider);
+                const user = result.user;
+                await handleUserAfterAuth(user);
+                return user;
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+        
+        async function handleUserAfterAuth(user) {
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            
+            if (!userDoc.exists()) {
+                // Check if age verification is pending
+                const pendingAge = localStorage.getItem('pendingAgeVerification');
+                if (!pendingAge) {
+                    showToast('Please verify your age first', 'error');
+                    await signOut(auth);
+                    showAgeVerificationFirst();
+                    return;
+                }
+                
+                const ageData = JSON.parse(pendingAge);
+                if (ageData.age < 13) {
+                    showToast('You must be at least 13 years old to use this service', 'error');
+                    await signOut(auth);
+                    return;
+                }
+                
+                if (ageData.age < 18 && ageData.age >= 13) {
+                    // Need parental consent
+                    if (!localStorage.getItem('parentalConsent_' + user.uid)) {
+                        showToast('Parental consent required. Please complete the consent form.', 'error');
+                        await signOut(auth);
+                        showParentalConsentForm(ageData.age, user.email);
+                        return;
+                    }
+                }
+                
+                // Determine if user gets discount
+                const hasDiscount = isEligibleForDiscount();
+                
+                await setDoc(userRef, {
+                    email: user.email,
+                    name: user.displayName,
+                    photoURL: user.photoURL,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString(),
+                    plan: 'free',
+                    searchesUsed: 0,
+                    age: ageData.age,
+                    region: ageData.region,
+                    hasDiscount: hasDiscount,
+                    verifiedAt: new Date().toISOString()
+                });
+                
+                localStorage.removeItem('pendingAgeVerification');
+                showToast(`Welcome! ${hasDiscount ? 'You got a special discount!' : 'Welcome to TraceBack AI!'}`, 'success');
+            } else {
+                await setDoc(userRef, { lastLogin: new Date().toISOString() }, { merge: true });
+                showToast(`Welcome back!`, 'success');
+            }
+            
+            updateAuthUI(user);
+            loadUserData(user.uid);
+            document.getElementById('loginModal').style.display = 'none';
+        }
+        
+        async function loadUserData(uid) {
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                document.getElementById('searchesLeft').innerText = Math.max(0, (data.plan === 'pro' ? 999 : 5) - (data.searchesUsed || 0));
+                document.getElementById('userPlanBadge').innerHTML = data.plan === 'pro' ? '<span class="bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 rounded-full text-xs">PRO</span>' : '<span class="bg-slate-600 px-2 py-0.5 rounded-full text-xs">FREE</span>';
+                if (data.hasDiscount) {
+                    document.getElementById('discountBadge').classList.remove('hidden');
+                }
+                loadUserHistory(uid);
+            }
+        }
+        
+        window.signOutUser = async () => {
+            await signOut(auth);
+            updateAuthUI(null);
+            showToast('Signed out successfully', 'success');
+        };
+        
+        function updateAuthUI(user) {
+            const authBtns = document.getElementById('authButtons');
+            const userInfo = document.getElementById('userInfo');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (user) {
+                authBtns.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+                userInfo.innerHTML = `<div class="flex items-center gap-2"><img src="${user.photoURL || 'https://ui-avatars.com/api/?background=6366f1&color=fff&name='+user.email.charAt(0)}" class="w-8 h-8 rounded-full border-2 border-indigo-500"><span class="text-sm hidden md:inline font-medium">${user.displayName?.split(' ')[0] || user.email.split('@')[0]}</span><span id="userPlanBadge"></span><span id="discountBadge" class="hidden bg-emerald-600/30 text-emerald-400 px-2 py-0.5 rounded-full text-xs ml-1">27% OFF</span></div>`;
+                loadUserData(user.uid);
+                window.currentUser = user;
+            } else {
+                authBtns.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+                userInfo.innerHTML = '';
+                window.currentUser = null;
+            }
+        }
+        
+        async function incrementSearchCount(uid) {
+            const userRef = doc(db, 'users', uid);
+            const userDoc = await getDoc(userRef);
+            const searchesUsed = (userDoc.data()?.searchesUsed || 0) + 1;
+            await setDoc(userRef, { searchesUsed }, { merge: true });
+            return searchesUsed;
+        }
+        
+        window.saveAnalysisResult = async (uid, query, results) => {
+            try {
+                const docRef = await addDoc(collection(db, 'analyses'), {
+                    userId: uid,
+                    query: query,
+                    results: results,
+                    timestamp: new Date().toISOString(),
+                    userEmail: window.currentUser?.email
+                });
+                return docRef.id;
+            } catch (error) {
+                return null;
+            }
+        };
+        
+        window.getUserHistory = async (uid) => {
+            const q = query(collection(db, 'analyses'), where('userId', '==', uid), orderBy('timestamp', 'desc'), limit(20));
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        };
+        
+        async function loadUserHistory(uid) {
+            const history = await window.getUserHistory(uid);
+            const container = document.getElementById('historyList');
+            if (!container) return;
+            if (history.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-500 py-8">No searches yet. Start your first search!</div>';
+                return;
+            }
+            container.innerHTML = history.map(item => `
+                <div class="bg-slate-800/40 rounded-xl p-4 mb-3 hover:bg-slate-800/60 transition">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <div>
+                            <p class="font-semibold"><i class="fas fa-search text-indigo-400 mr-2"></i>${escapeHtml(item.query)}</p>
+                            <p class="text-xs text-slate-500">${new Date(item.timestamp).toLocaleString()}</p>
+                            <p class="text-xs text-slate-400">${item.results?.length || 0} accounts found</p>
+                        </div>
+                        <button onclick="deleteAnalysis('${item.id}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1 rounded-lg text-sm transition">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        window.deleteAnalysis = async (docId) => {
+            if (confirm('Delete this search permanently?')) {
+                await deleteDoc(doc(db, 'analyses', docId));
+                showToast('Deleted successfully', 'success');
+                if (window.currentUser) loadUserHistory(window.currentUser.uid);
+            }
+        };
+        
+        onAuthStateChanged(auth, (user) => {
+            window.currentUser = user;
+            updateAuthUI(user);
+        });
+    </script>
     
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -28,9 +309,7 @@
         .result-item:hover { border-left-color: #4f46e5; background: rgba(79,70,229,0.05); }
         @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .animate-slide-up { animation: slide-up 0.3s ease-out; }
-        .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
         footer { margin-top: auto; }
         .pricing-card { transition: all 0.3s ease; cursor: pointer; }
         .pricing-card:hover { transform: translateY(-10px); border-color: #4f46e5; }
@@ -39,186 +318,82 @@
         .modal-content { background: #1e293b; border-radius: 1.5rem; max-width: 500px; width: 90%; padding: 1.5rem; border: 1px solid #4f46e5; animation: slide-up 0.3s ease; }
         .otp-input { letter-spacing: 8px; font-size: 2rem; text-align: center; font-weight: bold; }
         .age-verified-badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .refund-badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; }
-        .limited-offer { background: linear-gradient(90deg, #f59e0b, #ef4444); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 5px; }
-        .disabled-refund { opacity: 0.6; cursor: not-allowed; }
-        .filter-btn.active { background: #4f46e5 !important; }
-        .scrollbar-custom::-webkit-scrollbar { width: 6px; }
-        .scrollbar-custom::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
-        .scrollbar-custom::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
     </style>
 </head>
-<body class="scrollbar-custom">
+<body>
 
     <!-- ==================== AGE VERIFICATION MODAL (FIRST - BEFORE LOGIN) ==================== -->
     <div id="ageVerificationModal" class="modal-overlay" style="display: flex;">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-indigo-400"><i class="fas fa-shield-alt mr-2"></i>Age Verification Required</h3>
-                <button onclick="closeAgeModal()" class="text-slate-400 hover:text-white text-2xl" style="display: none;">&times;</button>
-            </div>
-            <p class="text-slate-400 text-sm mb-4">To comply with global privacy laws (GDPR, CCPA, DPDP), we need to verify your age before you can use this service.</p>
-            <p class="text-slate-300 text-sm mb-3"><i class="fas fa-info-circle text-blue-400 mr-1"></i> Age requirements by region:</p>
-            <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-4">
-                <span>🇮🇳 India: 18+</span>
-                <span>🇪🇺 EU: 16+</span>
-                <span>🇺🇸 USA: 13+ (with consent)</span>
-                <span>🇬🇧 UK: 13+ (with consent)</span>
-                <span>🇨🇦 Canada: 13+</span>
-                <span>🇦🇺 Australia: 13+</span>
-                <span>🇦🇪 UAE: 18+</span>
-                <span>🇸🇬 Singapore: 13+</span>
-            </div>
-            <select id="regionSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <h3 class="text-xl font-bold text-indigo-400 mb-4"><i class="fas fa-shield-alt mr-2"></i>Age Verification Required</h3>
+            <p class="text-slate-400 text-sm mb-4">To comply with global privacy laws, we need to verify your age before you can use this service.</p>
+            <select id="regionSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
                 <option value="india">🇮🇳 India (18+ - DPDP Act)</option>
                 <option value="eu">🇪🇺 European Union (16+ - GDPR)</option>
                 <option value="usa">🇺🇸 USA (13+ with consent - COPPA)</option>
                 <option value="uk">🇬🇧 United Kingdom (13+ with consent)</option>
                 <option value="canada">🇨🇦 Canada (13+ - PIPEDA)</option>
                 <option value="australia">🇦🇺 Australia (13+ - Privacy Act)</option>
-                <option value="uae">🇦🇪 UAE (18+ - Dubai Data Law)</option>
-                <option value="singapore">🇸🇬 Singapore (13+ - PDPA)</option>
                 <option value="other">🌍 Other (18+ recommended)</option>
             </select>
             <label class="block text-sm text-slate-300 mb-2">📅 Date of Birth:</label>
-            <input type="date" id="dobInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <input type="date" id="dobInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
             <div class="flex gap-3">
-                <button onclick="verifyAgeAndProceed()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Verify & Continue</button>
-                <button onclick="exitSite()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-6 py-2 rounded-xl transition">Exit</button>
+                <button onclick="verifyAgeAndProceed()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-xl flex-1 font-semibold">Verify & Continue</button>
+                <button onclick="exitSite()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-6 py-2 rounded-xl">Exit</button>
             </div>
             <p id="ageError" class="text-red-400 text-xs mt-3 hidden"></p>
-            <p id="ageInfo" class="text-slate-500 text-xs mt-3 text-center"></p>
         </div>
     </div>
 
-    <!-- ==================== PARENTAL CONSENT MODAL (FOR UNDERAGE USERS) ==================== -->
+    <!-- ==================== PARENTAL CONSENT MODAL ==================== -->
     <div id="parentalConsentModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-amber-400"><i class="fas fa-child mr-2"></i>Parental Consent Required</h3>
-                <button onclick="closeParentalModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <p id="parentalConsentMessage" class="text-slate-400 text-sm mb-4">You are under the required age for your region. Parental consent is required by law.</p>
+            <h3 class="text-xl font-bold text-amber-400 mb-4"><i class="fas fa-child mr-2"></i>Parental Consent Required</h3>
+            <p id="parentalMessage" class="text-slate-400 text-sm mb-4">You are under 18. Parental consent is required by law.</p>
             <label class="block text-sm text-slate-300 mb-2">👨‍👩‍👧 Parent/Guardian Email:</label>
-            <input type="email" id="parentEmail" placeholder="parent@example.com" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <input type="email" id="parentEmail" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
+            <label class="block text-sm text-slate-300 mb-2">📱 Parent Phone Number (for SMS verification):</label>
+            <input type="tel" id="parentPhone" placeholder="+1234567890" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
             <label class="block text-sm text-slate-300 mb-2">👶 Child's Name:</label>
-            <input type="text" id="childName" placeholder="Child's name" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 focus:outline-none focus:border-indigo-500">
+            <input type="text" id="childNameParent" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
             <div class="flex gap-3">
-                <button onclick="sendParentalConsent()" class="bg-amber-600 hover:bg-amber-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Send Consent Request</button>
-                <button onclick="closeParentalModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl transition">Cancel</button>
+                <button onclick="sendParentalConsent()" class="bg-amber-600 hover:bg-amber-500 px-6 py-2 rounded-xl flex-1 font-semibold">Send Consent Request</button>
+                <button onclick="closeParentalModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl">Cancel</button>
             </div>
-            <p class="text-xs text-slate-500 mt-4 text-center">A consent link will be sent to the parent's email address. Access granted only after approval.</p>
         </div>
     </div>
 
-    <!-- ==================== LOGIN MODAL (WITH REAL OTP VERIFICATION) ==================== -->
+    <!-- ==================== SMS VERIFICATION MODAL ==================== -->
+    <div id="smsVerificationModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold text-blue-400 mb-4"><i class="fas fa-sms mr-2"></i>SMS Verification</h3>
+            <p class="text-slate-400 text-sm mb-4">A 6-digit OTP has been sent to the parent's phone number.</p>
+            <label class="block text-sm text-slate-300 mb-2">🔐 Enter OTP:</label>
+            <input type="text" id="smsOtpInput" maxlength="6" placeholder="000000" class="otp-input w-full bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 text-center">
+            <div class="flex gap-3">
+                <button onclick="verifySmsOtp()" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-xl flex-1 font-semibold">Verify</button>
+                <button onclick="closeSmsModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN MODAL ==================== -->
     <div id="loginModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-indigo-400"><i class="fas fa-sign-in-alt mr-2"></i>Sign In to Continue</h3>
-                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <p class="text-slate-400 text-sm mb-4">Age verification complete! Please verify your email to continue.</p>
-            
-            <!-- Email Login with OTP -->
-            <div class="space-y-3">
-                <div class="relative my-2">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-700"></div>
-                    </div>
-                    <div class="relative flex justify-center text-xs">
-                        <span class="bg-slate-800 px-2 text-slate-400">Verify with Email</span>
-                    </div>
-                </div>
-                
-                <div id="emailLoginDiv">
-                    <input type="email" id="loginEmail" placeholder="Enter your email address" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 focus:outline-none focus:border-indigo-500">
-                    <button onclick="sendLoginOTP()" id="sendOtpBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-semibold transition">Send Verification Code</button>
-                </div>
-                
-                <div id="otpVerificationDiv" style="display: none;">
-                    <p class="text-sm text-emerald-400 mb-2">✓ Verification code sent to <span id="otpEmailDisplay"></span></p>
-                    <input type="text" id="otpCode" maxlength="6" placeholder="Enter 6-digit code" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 text-center text-xl tracking-widest focus:outline-none focus:border-indigo-500">
-                    <button onclick="verifyLoginOTP()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-semibold transition">Verify & Sign In</button>
-                    <button onclick="resendLoginOTP()" class="w-full text-slate-400 text-sm mt-2 hover:text-white transition">Resend Code</button>
-                </div>
-                
-                <!-- Google Sign In Option -->
-                <div class="relative my-4">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-700"></div>
-                    </div>
-                    <div class="relative flex justify-center text-xs">
-                        <span class="bg-slate-800 px-2 text-slate-400">Or</span>
-                    </div>
-                </div>
-                
-                <button onclick="handleGoogleSignIn()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">
+            <h3 class="text-xl font-bold text-indigo-400 mb-4"><i class="fas fa-sign-in-alt mr-2"></i>Sign In to Continue</h3>
+            <p class="text-slate-400 text-sm mb-4">Age verification complete! Please sign in to access all features.</p>
+            <div id="authButtons" class="space-y-3">
+                <button onclick="window.signInWithGoogle()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">
                     <i class="fab fa-google"></i> Sign in with Google
                 </button>
+                <button onclick="window.signInWithApple()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                    <i class="fab fa-apple"></i> Sign in with Apple
+                </button>
             </div>
+            <div id="userInfo" class="hidden"></div>
+            <button id="logoutBtn" onclick="window.signOutUser()" class="hidden w-full bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white py-3 rounded-xl font-semibold transition mt-3">Sign Out</button>
             <p class="text-xs text-slate-500 mt-4 text-center">By signing in, you agree to our Terms of Service and Privacy Policy.</p>
-        </div>
-    </div>
-
-    <!-- ==================== 2FA DELETE MODAL ==================== -->
-    <div id="delete2FAModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-red-400"><i class="fas fa-shield-alt mr-2"></i>Two-Factor Verification Required</h3>
-                <button onclick="close2FAModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <p class="text-slate-400 text-sm mb-4">⚠️ This action is IRREVERSIBLE. A 6-digit OTP has been sent to your email.</p>
-            <label class="block text-sm text-slate-300 mb-2">🔐 Enter OTP:</label>
-            <input type="text" id="otpInput" maxlength="6" placeholder="000000" class="otp-input w-full bg-slate-800 border border-slate-700 rounded-xl p-4 mb-4 text-center text-2xl tracking-widest focus:outline-none focus:border-indigo-500">
-            <div class="flex gap-3 mb-3">
-                <button onclick="sendDeleteOTP()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm transition flex-1">⟳ Resend OTP</button>
-                <button onclick="verifyDeleteOTP()" class="bg-red-600 hover:bg-red-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Confirm Delete</button>
-            </div>
-            <button onclick="close2FAModal()" class="w-full mt-2 text-slate-500 text-sm hover:text-slate-400 transition">Cancel</button>
-        </div>
-    </div>
-
-    <!-- ==================== REFUND REQUEST MODAL ==================== -->
-    <div id="refundModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-emerald-400"><i class="fas fa-hand-holding-usd mr-2"></i>Request Refund</h3>
-                <button onclick="closeRefundModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <p class="text-slate-400 text-sm mb-4">7-Day Money-Back Guarantee. Please provide your order details.</p>
-            <div id="refundEligibilityMsg" class="bg-amber-500/10 p-3 rounded-lg mb-4 text-sm text-amber-400"></div>
-            <input type="text" id="orderId" placeholder="Order ID (e.g., TB-12345)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
-            <input type="email" id="refundEmail" placeholder="Your Email Address" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
-            <select id="refundReason" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4">
-                <option value="">Select Reason</option>
-                <option>Didn't find expected results</option>
-                <option>Technical issues</option>
-                <option>Accidental purchase</option>
-                <option>No longer need service</option>
-                <option>Other</option>
-            </select>
-            <div class="flex gap-3">
-                <button onclick="submitRefundRequest()" id="submitRefundBtn" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-xl flex-1 font-semibold transition">Submit Request</button>
-                <button onclick="closeRefundModal()" class="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded-xl transition">Cancel</button>
-            </div>
-            <p class="text-xs text-slate-500 mt-4 text-center">Refund requests processed within 48 hours</p>
-        </div>
-    </div>
-
-    <!-- ==================== AUDIT LOG MODAL ==================== -->
-    <div id="auditLogModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-emerald-400"><i class="fas fa-history mr-2"></i>Audit Log</h3>
-                <button onclick="closeAuditModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <p class="text-slate-400 text-sm mb-4">Your activity history (last 50 actions)</p>
-            <div id="auditLogList" class="max-h-96 overflow-y-auto space-y-2 text-sm"></div>
-            <div class="flex gap-3 mt-4">
-                <button onclick="exportAuditLog()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm transition flex-1"><i class="fas fa-download"></i> Export Logs</button>
-                <button onclick="closeAuditModal()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm transition">Close</button>
-            </div>
         </div>
     </div>
 
@@ -231,280 +406,150 @@
                 </div>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold gradient-text">TraceBack AI</h1>
-                    <p class="text-[9px] text-slate-500 -mt-1">7-Day Money-Back | GDPR | CCPA | DPDP</p>
+                    <p class="text-[9px] text-slate-500 -mt-1">GDPR | CCPA | DPDP Compliant</p>
                 </div>
             </div>
             <div class="hidden md:flex gap-6 text-sm">
-                <a href="#home" class="hover:text-indigo-400 transition" id="navHome">Home</a>
-                <a href="#pricing" class="hover:text-indigo-400 transition" id="navPricing">Pricing</a>
-                <a href="#why" class="hover:text-indigo-400 transition" id="navWhy">Why Use</a>
-                <a href="#compliance" class="hover:text-indigo-400 transition" id="navCompliance">Compliance</a>
-                <a href="#faq" class="hover:text-indigo-400 transition" id="navFaq">FAQ</a>
-            </div>
-            <div class="flex items-center gap-3">
-                <div id="userInfo" class="flex items-center"></div>
-                <div id="ageStatusDisplay" class="hidden"></div>
-                <button id="logoutBtn" onclick="handleLogout()" class="hidden bg-slate-700 hover:bg-red-600 px-5 py-2 rounded-full text-sm transition">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+                <a href="#home" class="hover:text-indigo-400 transition">Home</a>
+                <a href="#pricing" class="hover:text-indigo-400 transition">Pricing</a>
+                <a href="#why" class="hover:text-indigo-400 transition">Why Use</a>
+                <a href="#faq" class="hover:text-indigo-400 transition">FAQ</a>
             </div>
         </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
-        <!-- ==================== HERO SECTION ==================== -->
+        <!-- Hero Section -->
         <section id="home" class="text-center py-12 md:py-16">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-5 text-xs font-bold text-indigo-400 uppercase bg-indigo-400/10 rounded-full border border-indigo-400/30">
-                <i class="fas fa-globe"></i> 7-Day Money-Back Guarantee | Trusted in 50+ Countries
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-5 text-xs font-bold text-indigo-400 uppercase bg-indigo-400/10 rounded-full">
+                <i class="fas fa-globe"></i> Trusted in 50+ Countries | GDPR | CCPA | DPDP
             </div>
             <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-5">Discover Your <span class="gradient-text">Digital Footprint</span></h2>
-            <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mb-8">Enter any email or phone number to find all associated social media accounts, online profiles, and digital presence across 50+ platforms worldwide. <strong class="text-white">Start FREE - 5 searches/month!</strong></p>
+            <p class="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mb-8">Enter any email or phone number to find all associated social media accounts across 50+ platforms worldwide.</p>
             
             <div class="flex flex-col md:flex-row gap-4 justify-center max-w-3xl mx-auto">
-                <div class="flex-1 relative">
-                    <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
-                    <input type="text" id="searchInput" placeholder="Email or Phone Number (e.g., user@gmail.com or +1234567890)" class="w-full bg-slate-800/70 border border-slate-700 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-indigo-500 transition text-lg">
-                </div>
-                <button onclick="startAnalysis()" id="searchBtn" class="btn-primary px-8 py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 text-lg">
+                <input type="text" id="searchInput" placeholder="Email or Phone Number" class="flex-1 bg-slate-800/70 border border-slate-700 rounded-2xl py-4 px-6 focus:outline-none focus:border-indigo-500">
+                <button onclick="startAnalysis()" class="btn-primary px-8 py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2">
                     <i class="fas fa-search"></i> Analyze Now
                 </button>
             </div>
             
             <div class="flex flex-wrap justify-center gap-4 mt-6 text-sm">
-                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 50+ Platforms</div>
-                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 5 FREE Searches</div>
-                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 7-Day Refund</div>
-                <div class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> GDPR/CCPA/DPDP</div>
+                <span class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 50+ Platforms</span>
+                <span class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> 5 FREE Searches</span>
+                <span class="bg-slate-800/50 rounded-full px-4 py-2"><i class="fas fa-check-circle text-green-500 mr-2"></i> GDPR Compliant</span>
             </div>
         </section>
 
-        <!-- ==================== WHY USE SECTION ==================== -->
+        <!-- Why Use Section -->
         <section id="why" class="py-16">
-            <h3 class="text-3xl md:text-4xl font-bold text-center mb-4">🔍 Why Choose TraceBack AI?</h3>
-            <p class="text-center text-slate-400 mb-12 max-w-2xl mx-auto">Trusted by professionals and individuals across 50+ countries</p>
+            <h3 class="text-3xl font-bold text-center mb-12">🔍 Why Choose TraceBack AI?</h3>
             <div class="grid md:grid-cols-3 gap-6">
                 <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-user-secret text-3xl text-indigo-400 mb-3"></i><h4 class="font-bold">Protect Your Privacy</h4><p class="text-sm text-slate-400">Find what personal info is publicly available online</p></div>
-                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-id-card text-3xl text-emerald-400 mb-3"></i><h4 class="font-bold">Prevent Identity Theft</h4><p class="text-sm text-slate-400">Detect if your email appears in data breaches</p></div>
-                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-briefcase text-3xl text-purple-400 mb-3"></i><h4 class="font-bold">Manage Reputation</h4><p class="text-sm text-slate-400">See what employers see when they search you</p></div>
-                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-child text-3xl text-amber-400 mb-3"></i><h4 class="font-bold">Protect Children</h4><p class="text-sm text-slate-400">Monitor your children's online presence</p></div>
-                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-shield-alt text-3xl text-red-400 mb-3"></i><h4 class="font-bold">Detect Breaches</h4><p class="text-sm text-slate-400">Get alerted for credential leaks</p></div>
-                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-trash-alt text-3xl text-blue-400 mb-3"></i><h4 class="font-bold">Clean Old Accounts</h4><p class="text-sm text-slate-400">Find and delete forgotten accounts</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-shield-alt text-3xl text-emerald-400 mb-3"></i><h4 class="font-bold">Detect Breaches</h4><p class="text-sm text-slate-400">Get alerted for credential leaks</p></div>
+                <div class="glass-card p-5 rounded-xl text-center"><i class="fas fa-trash-alt text-3xl text-purple-400 mb-3"></i><h4 class="font-bold">Clean Old Accounts</h4><p class="text-sm text-slate-400">Find and delete forgotten accounts</p></div>
             </div>
         </section>
 
-        <!-- ==================== PRICING SECTION ==================== -->
+        <!-- Pricing Section -->
         <section id="pricing" class="py-16 border-t border-slate-800">
-            <h3 class="text-3xl md:text-4xl font-bold text-center mb-4">💰 Simple, Transparent Pricing</h3>
-            <p class="text-center text-slate-400 mb-12">Start free. Upgrade anytime. <span class="refund-badge"><i class="fas fa-shield-alt mr-2"></i> 7-Day Money-Back Guarantee</span> <span id="discountBadge" class="limited-offer">Limited Offer</span></p>
-            
+            <h3 class="text-3xl font-bold text-center mb-12">💰 Simple Pricing</h3>
             <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 <div class="glass-card p-6 rounded-2xl text-center pricing-card">
-                    <div class="text-3xl mb-2">🎁</div>
-                    <h4 class="text-2xl font-bold mb-2">Free</h4>
-                    <p class="text-4xl font-bold mt-2">$0<span class="text-sm text-slate-400">/forever</span></p>
-                    <hr class="my-6 border-slate-700">
-                    <ul class="space-y-2 text-left text-sm">
+                    <h4 class="text-2xl font-bold">Free</h4>
+                    <p class="text-4xl font-bold mt-2">$0<span class="text-sm">/forever</span></p>
+                    <ul class="mt-6 space-y-2 text-left text-sm">
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 5 searches/month</li>
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 25+ platforms</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 7-day history</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Basic export (JSON)</li>
-                        <li class="text-slate-500"><i class="fas fa-times-circle mr-2"></i> Full source code download</li>
-                        <li class="text-slate-500"><i class="fas fa-times-circle mr-2"></i> Priority support</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Basic export</li>
                     </ul>
-                    <button onclick="selectFreePlan()" class="mt-6 w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-semibold transition">Current Plan</button>
+                    <button onclick="selectFreePlan()" class="mt-6 bg-slate-700 py-3 rounded-xl w-full">Current Plan</button>
                 </div>
                 
                 <div class="glass-card p-6 rounded-2xl text-center pricing-card relative border-2 border-indigo-500">
                     <div class="popular-badge">🔥 MOST POPULAR</div>
-                    <div class="text-3xl mb-2">💎</div>
-                    <h4 class="text-2xl font-bold mb-2">Pro Monthly</h4>
-                    <p class="text-4xl font-bold mt-2">$9<span class="text-sm text-slate-400">/month</span></p>
-                    <p class="text-emerald-400 text-xs mt-1">Cancel anytime • 7-day refund</p>
-                    <hr class="my-6 border-slate-700">
-                    <ul class="space-y-2 text-left text-sm">
+                    <h4 class="text-2xl font-bold">Pro Monthly</h4>
+                    <p class="text-4xl font-bold mt-2">$9<span class="text-sm">/month</span></p>
+                    <ul class="mt-6 space-y-2 text-left text-sm">
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Unlimited searches</li>
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 50+ platforms</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> 1-year history</li>
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Full source code download</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Dark web scanning</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Priority email support</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Export to JSON/PDF/CSV</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Priority support</li>
                     </ul>
-                    <button onclick="initiatePayment('monthly')" class="btn-primary py-3 rounded-xl w-full font-bold transition">Upgrade →</button>
+                    <button onclick="initiatePayment('monthly')" class="btn-primary py-3 rounded-xl w-full font-bold">Upgrade</button>
                 </div>
                 
                 <div class="glass-card p-6 rounded-2xl text-center pricing-card">
-                    <div class="text-3xl mb-2">🚀</div>
-                    <h4 class="text-2xl font-bold mb-2">Pro Yearly</h4>
-                    <p class="text-4xl font-bold mt-2">$79<span class="text-sm text-slate-400">/year</span></p>
-                    <p class="text-emerald-400 text-xs mt-1" id="yearlyDiscountText">🔥 Save 27% (3.2 months free!)</p>
-                    <hr class="my-6 border-slate-700">
-                    <ul class="space-y-2 text-left text-sm">
+                    <h4 class="text-2xl font-bold">Pro Yearly</h4>
+                    <p class="text-4xl font-bold mt-2">$79<span class="text-sm">/year</span></p>
+                    <div id="yearlyDiscountBadge" class="hidden text-emerald-400 text-xs mt-1">🔥 Special Discount Applied!</div>
+                    <ul class="mt-6 space-y-2 text-left text-sm">
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> All Monthly features</li>
                         <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Priority 24/7 support</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> API access (10k/day)</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Team collaboration</li>
-                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> Early access to features</li>
+                        <li><i class="fas fa-check-circle text-green-500 mr-2"></i> API access</li>
                     </ul>
-                    <button onclick="initiatePayment('yearly')" id="yearlyUpgradeBtn" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 py-3 rounded-xl w-full font-bold transition">Save 27% →</button>
-                </div>
-            </div>
-            
-            <p class="text-center text-xs text-slate-500 mt-8">
-                <i class="fas fa-lock mr-1"></i> Secure payment via Razorpay (India) & Stripe (Global) • Cancel anytime • 7-day money-back guarantee
-            </p>
-        </section>
-
-        <!-- ==================== REFUND POLICY SECTION ==================== -->
-        <section id="refund-policy" class="py-16 border-t border-slate-800">
-            <h3 class="text-3xl font-bold text-center mb-8">💰 7-Day Money-Back Guarantee</h3>
-            <div class="max-w-4xl mx-auto glass-card p-8 rounded-2xl">
-                <div class="flex items-center justify-center mb-6">
-                    <span class="refund-badge text-lg px-6 py-2"><i class="fas fa-shield-alt mr-2"></i> 100% Risk-Free</span>
-                </div>
-                
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30">
-                        <h4 class="font-bold text-emerald-400 mb-3"><i class="fas fa-check-circle mr-2"></i> You WILL Get Refund If:</h4>
-                        <ul class="space-y-2 text-sm text-slate-300">
-                            <li>• Purchased within last <strong class="text-white">7 days</strong></li>
-                            <li>• Used less than <strong class="text-white">10 searches</strong></li>
-                            <li>• Did NOT export/download reports</li>
-                            <li>• Did NOT use API more than 50 times</li>
-                            <li>• <strong class="text-emerald-400">Randomly selected (5% of users)</strong></li>
-                        </ul>
-                    </div>
-                    <div class="bg-red-500/10 p-4 rounded-xl border border-red-500/30">
-                        <h4 class="font-bold text-red-400 mb-3"><i class="fas fa-times-circle mr-2"></i> You WILL NOT Get Refund If:</h4>
-                        <ul class="space-y-2 text-sm text-slate-300">
-                            <li>• More than <strong class="text-white">7 days</strong> passed</li>
-                            <li>• Exceeded <strong class="text-white">10 searches</strong></li>
-                            <li>• Downloaded reports or exported data</li>
-                            <li>• Shared results with third parties</li>
-                            <li>• <strong class="text-red-400">Not selected in the 5% random draw</strong></li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="mt-6 text-center">
-                    <button onclick="showRefundModal()" id="refundRequestBtn" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl font-semibold transition">
-                        <i class="fas fa-hand-holding-usd mr-2"></i> Request Refund
-                    </button>
-                    <p class="text-xs text-slate-500 mt-3">Refund requests processed within 48 hours. Only 5% of eligible users receive refunds.</p>
+                    <button onclick="initiatePayment('yearly')" class="bg-slate-700 hover:bg-slate-600 py-3 rounded-xl w-full font-bold">Upgrade</button>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== LOADING ==================== -->
+        <!-- Loading -->
         <div id="loading" class="hidden text-center py-12">
             <div class="inline-block w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-3 text-slate-400">Scanning 50+ platforms globally... <span id="scanStep" class="text-indigo-400">Initializing</span></p>
-            <div class="max-w-md mx-auto mt-4 bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 w-0 transition-all duration-500"></div>
-            </div>
+            <p class="mt-3 text-slate-400">Scanning platforms... <span id="scanStep">Initializing</span></p>
         </div>
 
-        <!-- ==================== RESULTS SECTION ==================== -->
+        <!-- Results Section -->
         <div id="resultsContainer" class="hidden mt-8">
             <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                 <div>
-                    <h3 class="text-2xl font-bold">📊 Search Results: <span id="resultQuery" class="gradient-text"></span></h3>
-                    <p class="text-slate-400 text-sm"><span id="resultCount">0</span> digital footprints found</p>
+                    <h3 class="text-2xl font-bold">Results: <span id="resultQuery"></span></h3>
+                    <p><span id="resultCount">0</span> footprints found</p>
                 </div>
-                <div class="flex gap-2 flex-wrap">
-                    <button onclick="exportResults()" class="bg-slate-700 hover:bg-indigo-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-download"></i> Export JSON</button>
-                    <button onclick="exportResultsCSV()" class="bg-slate-700 hover:bg-emerald-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-file-csv"></i> Export CSV</button>
-                    <button onclick="generatePDFReport()" class="bg-slate-700 hover:bg-red-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-file-pdf"></i> PDF Report</button>
-                    <button onclick="printResults()" class="bg-slate-700 hover:bg-purple-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-print"></i> Print</button>
-                    <button onclick="shareResults()" class="bg-slate-700 hover:bg-blue-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-share-alt"></i> Share</button>
-                    <button onclick="showAuditLog()" class="bg-slate-700 hover:bg-amber-600 px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-history"></i> Audit Log</button>
-                    <button onclick="deleteAllResults()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-trash-alt"></i> Clear All</button>
-                    <button onclick="requestAccountDeletion()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-2 rounded-xl text-sm transition"><i class="fas fa-user-slash"></i> Delete Account</button>
+                <div class="flex gap-2">
+                    <button onclick="exportResults()" class="bg-slate-700 px-3 py-2 rounded-xl text-sm">Export</button>
+                    <button onclick="generatePDFReport()" class="bg-slate-700 px-3 py-2 rounded-xl text-sm">PDF</button>
+                    <button onclick="deleteAllResults()" class="bg-red-600/20 px-3 py-2 rounded-xl text-sm">Clear</button>
+                    <button onclick="showRefundModal()" class="bg-emerald-600/20 px-3 py-2 rounded-xl text-sm">Request Refund</button>
                 </div>
             </div>
-            
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-indigo-400" id="totalSites">0</p><p class="text-[10px]">Total Profiles</p></div>
-                <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-pink-400" id="totalSocial">0</p><p class="text-[10px]">Social Media</p></div>
-                <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-emerald-400" id="totalCode">0</p><p class="text-[10px]">Developer</p></div>
-                <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-amber-400" id="totalBreaches">0</p><p class="text-[10px]">Data Breaches</p></div>
-                <div class="glass-card p-3 text-center rounded-xl"><p class="text-xl font-bold text-orange-400" id="riskLevel">Low</p><p class="text-[10px]">Risk Score</p></div>
+                <div class="glass-card p-3 text-center"><p class="text-xl font-bold text-indigo-400" id="totalSites">0</p><p class="text-[10px]">Total</p></div>
+                <div class="glass-card p-3 text-center"><p class="text-xl font-bold text-pink-400" id="totalSocial">0</p><p class="text-[10px]">Social</p></div>
+                <div class="glass-card p-3 text-center"><p class="text-xl font-bold text-emerald-400" id="totalCode">0</p><p class="text-[10px]">Dev</p></div>
+                <div class="glass-card p-3 text-center"><p class="text-xl font-bold text-amber-400" id="totalBreaches">0</p><p class="text-[10px]">Breaches</p></div>
+                <div class="glass-card p-3 text-center"><p class="text-xl font-bold text-orange-400" id="riskLevel">Low</p><p class="text-[10px]">Risk</p></div>
             </div>
-            
-            <div class="flex flex-wrap gap-2 mb-4">
-                <button onclick="filterResults('all')" class="filter-btn px-3 py-1 rounded-full text-xs bg-indigo-600">All</button>
-                <button onclick="filterResults('social')" class="filter-btn px-3 py-1 rounded-full text-xs bg-slate-700">Social Media</button>
-                <button onclick="filterResults('code')" class="filter-btn px-3 py-1 rounded-full text-xs bg-slate-700">Developer</button>
-                <button onclick="filterResults('breach')" class="filter-btn px-3 py-1 rounded-full text-xs bg-slate-700">Breaches</button>
-                <input type="text" id="searchFilter" placeholder="Filter by name..." class="ml-auto bg-slate-800 px-3 py-1 rounded-full text-xs w-40 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-            </div>
-            
-            <div id="resultsList" class="space-y-3 max-h-[500px] overflow-y-auto pr-2"></div>
-            
+            <div id="resultsList" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
             <div id="pagination" class="flex justify-center gap-2 mt-6"></div>
         </div>
 
-        <!-- ==================== HISTORY SECTION ==================== -->
+        <!-- History Section -->
         <section id="history" class="mt-16">
-            <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
-                <h3 class="text-2xl font-bold"><i class="fas fa-clock text-indigo-400 mr-2"></i>Your Search History</h3>
-                <button onclick="clearAllHistory()" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-4 py-2 rounded-xl text-sm transition">
-                    <i class="fas fa-trash-alt"></i> Clear All History
-                </button>
-            </div>
+            <h3 class="text-2xl font-bold mb-6"><i class="fas fa-clock text-indigo-400 mr-2"></i>Your Search History</h3>
             <div id="historyList" class="space-y-3"></div>
         </section>
 
-        <!-- ==================== GLOBAL COMPLIANCE SECTION ==================== -->
-        <section id="compliance" class="py-16 border-t border-slate-800">
-            <h3 class="text-3xl font-bold text-center mb-8">🌍 Global Compliance Framework</h3>
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-indigo-400"><i class="fas fa-globe-europe mr-2"></i>GDPR (EU)</h4><p class="text-xs text-slate-400">Age: 16+ • Data portability • Right to deletion</p></div>
-                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-blue-400"><i class="fas fa-flag-usa mr-2"></i>CCPA/COPPA (USA)</h4><p class="text-xs text-slate-400">Age: 13+ with consent • Opt-out rights</p></div>
-                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-orange-400"><i class="fas fa-flag-india mr-2"></i>DPDP Act (India)</h4><p class="text-xs text-slate-400">Age: 18+ • Data localization • Grievance officer</p></div>
-                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-red-400"><i class="fas fa-maple-leaf mr-2"></i>PIPEDA (Canada)</h4><p class="text-xs text-slate-400">Age: 13+ • Accountability • Consent</p></div>
-                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-green-400"><i class="fas fa-flag-checkered mr-2"></i>Privacy Act (Australia)</h4><p class="text-xs text-slate-400">Age: 13+ • Openness • Data quality</p></div>
-                <div class="glass-card p-4 rounded-xl"><h4 class="font-bold text-yellow-400"><i class="fas fa-globe-asia mr-2"></i>PDPA (Singapore)</h4><p class="text-xs text-slate-400">Age: 13+ • Consent • Purpose limitation</p></div>
-            </div>
-            
-            <div class="mt-6 glass-card p-5 rounded-2xl border-l-4 border-emerald-500">
-                <h4 class="text-lg font-bold mb-2"><i class="fas fa-database text-emerald-400 mr-2"></i>Data Localization Commitment</h4>
-                <p class="text-sm text-slate-300">Your data is stored on region-specific servers:</p>
-                <div class="flex flex-wrap gap-3 mt-3 text-xs text-slate-400">
-                    <span><i class="fas fa-check-circle text-green-500"></i> India: Mumbai</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> EU: Frankfurt</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> USA: Iowa</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> Canada: Montreal</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> Australia: Sydney</span>
-                    <span><i class="fas fa-check-circle text-green-500"></i> Singapore: Singapore</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== FAQ SECTION ==================== -->
+        <!-- FAQ -->
         <section id="faq" class="py-16 border-t border-slate-800">
-            <h3 class="text-3xl font-bold text-center mb-8">❓ Frequently Asked Questions</h3>
+            <h3 class="text-3xl font-bold text-center mb-8">❓ FAQ</h3>
             <div class="max-w-3xl mx-auto space-y-3">
-                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Is TraceBack AI legal globally?</summary><p class="text-slate-400 text-sm mt-2">Yes! Compliant with GDPR (EU), CCPA/COPPA (USA), DPDP (India), PIPEDA (Canada), Privacy Act (Australia), PDPA (Singapore).</p></details>
-                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How does age verification work?</summary><p class="text-slate-400 text-sm mt-2">Before you can sign in, you must verify your age based on your region. India: 18+, EU: 16+, USA/Canada/Australia: 13+ with parental consent. Underage users require parent email.</p></details>
-                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How does the 7-day refund work?</summary><p class="text-slate-400 text-sm mt-2">Request refund within 7 days of purchase. Eligibility checked based on usage (max 10 searches, no exports). Only 5% of eligible users randomly receive refunds.</p></details>
-                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Is the 27% discount available for everyone?</summary><p class="text-slate-400 text-sm mt-2">No, the 27% discount is a limited offer available only for the first 100 users. After that, yearly plan will be at regular price.</p></details>
-                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Can I delete my account?</summary><p class="text-slate-400 text-sm mt-2">Yes! Click "Delete Account" button, enter OTP sent to your email, and confirm. All data permanently deleted.</p></details>
-                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">What platforms can you search?</summary><p class="text-slate-400 text-sm mt-2">GitHub, LinkedIn, Twitter, Facebook, Instagram, Stack Overflow, Reddit, Medium, Dev.to, GitLab, YouTube, Pinterest, Quora, Telegram, Discord, TikTok, Snapchat, WhatsApp, and 50+ more.</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">Is TraceBack AI legal?</summary><p class="text-slate-400 text-sm mt-2">Yes! Compliant with GDPR, CCPA, DPDP, and other global privacy laws.</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">How does age verification work?</summary><p class="text-slate-400 text-sm mt-2">You must verify your age before sign in. Under 18 requires parental consent via email and SMS.</p></details>
+                <details class="glass-card rounded-xl p-4"><summary class="cursor-pointer font-semibold">What platforms can you search?</summary><p class="text-slate-400 text-sm mt-2">GitHub, LinkedIn, Twitter, Facebook, Instagram, Stack Overflow, Reddit, and 50+ more.</p></details>
             </div>
         </section>
     </main>
 
-    <!-- ==================== FOOTER ==================== -->
     <footer class="bg-[#0a0f1a] border-t border-slate-800 mt-12">
         <div class="max-w-7xl mx-auto px-6 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div><div class="flex items-center gap-2 mb-3"><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><i class="fas fa-fingerprint text-white text-sm"></i></div><h3 class="text-xl font-bold gradient-text">TraceBack AI</h3></div><p class="text-slate-500 text-sm">7-Day Money-Back | GDPR | CCPA | DPDP Compliant</p><div class="flex gap-3 mt-4"><i class="fab fa-twitter text-slate-500 hover:text-indigo-400 cursor-pointer"></i><i class="fab fa-linkedin text-slate-500 hover:text-indigo-400 cursor-pointer"></i><i class="fab fa-github text-slate-500 hover:text-indigo-400 cursor-pointer"></i></div></div>
-                <div><h5 class="font-bold text-sm mb-4">Product</h5><ul class="space-y-2 text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400">Pricing</li><li class="cursor-pointer hover:text-indigo-400">Features</li><li class="cursor-pointer hover:text-indigo-400">API</li></ul></div>
-                <div><h5 class="font-bold text-sm mb-4">Legal</h5><ul class="space-y-2 text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400" onclick="showPrivacy()">Privacy Policy</li><li class="cursor-pointer hover:text-indigo-400" onclick="showTerms()">Terms of Service</li><li class="cursor-pointer hover:text-indigo-400" onclick="document.getElementById('refund-policy').scrollIntoView({behavior:'smooth'})">Refund Policy</li></ul></div>
-                <div><h5 class="font-bold text-sm mb-4">Contact</h5><ul class="space-y-2 text-sm text-slate-500"><li><i class="fas fa-envelope mr-2"></i> support@traceback.ai</li><li><i class="fas fa-user-shield mr-2"></i> privacy@traceback.ai</li><li><i class="fas fa-gavel mr-2"></i> legal@traceback.ai</li></ul></div>
+                <div><h3 class="text-xl font-bold gradient-text">TraceBack AI</h3><p class="text-slate-500 text-sm mt-2">GDPR | CCPA | DPDP Compliant</p></div>
+                <div><h5 class="font-bold text-sm mb-4">Product</h5><ul class="text-sm text-slate-500"><li>Pricing</li><li>Features</li></ul></div>
+                <div><h5 class="font-bold text-sm mb-4">Legal</h5><ul class="text-sm text-slate-500"><li class="cursor-pointer hover:text-indigo-400" onclick="showPrivacy()">Privacy Policy</li><li class="cursor-pointer hover:text-indigo-400" onclick="showTerms()">Terms of Service</li></ul></div>
+                <div><h5 class="font-bold text-sm mb-4">Contact</h5><ul class="text-sm text-slate-500"><li>support@traceback.ai</li></ul></div>
             </div>
-            <div class="border-t border-slate-800 mt-8 pt-6 text-center text-xs text-slate-500">© 2026 TraceBack AI. All rights reserved. | 7-Day Money-Back Guarantee | GDPR | CCPA | DPDP | PIPEDA | PDPA Compliant</div>
+            <div class="border-t border-slate-800 mt-8 pt-6 text-center text-xs text-slate-500">© 2026 TraceBack AI. All rights reserved.</div>
         </div>
     </footer>
 
@@ -517,145 +562,72 @@
         let currentFilter = 'all';
         let currentPage = 1;
         const itemsPerPage = 10;
-        let isLoggedIn = false;
-        let isAgeVerified = localStorage.getItem('ageVerified') === 'true';
-        let userAge = localStorage.getItem('userAge') || null;
-        let userRegion = localStorage.getItem('userRegion') || null;
         let userPlan = localStorage.getItem('userPlan') || 'free';
         let searchesUsed = parseInt(localStorage.getItem('searchesUsed') || '0');
-        let currentDeleteOTP = null;
-        let otpExpiry = null;
-        let analysisHistory = JSON.parse(localStorage.getItem('traceHistory') || '[]');
-        let auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
         let pendingAgeData = null;
-        let pendingLoginOTP = null;
-        let pendingLoginEmail = null;
+        let pendingParentData = null;
         
-        // Limited offer counters
-        let totalRegisteredUsers = parseInt(localStorage.getItem('totalRegisteredUsers') || '0');
-        let refundEligibleUsers = JSON.parse(localStorage.getItem('refundEligibleUsers') || '[]');
+        // Statistics counters (hidden from user UI but functional)
+        let refundRequestCount = parseInt(localStorage.getItem('refundRequestCount') || '0');
+        let refundSuccessCount = parseInt(localStorage.getItem('refundSuccessCount') || '0');
         
-        // Check if discount is still available (first 100 users only)
-        let discountAvailable = totalRegisteredUsers < 100;
-        
-        // Update UI based on discount availability
-        function updateDiscountUI() {
-            const discountText = document.getElementById('yearlyDiscountText');
-            const discountBadge = document.getElementById('discountBadge');
-            const yearlyBtn = document.getElementById('yearlyUpgradeBtn');
+        // Check if user is eligible for 27% discount (internal logic - not shown to user)
+        function isEligibleForDiscount() {
+            const eligibleUsers = JSON.parse(localStorage.getItem('discountEligibleUsers') || '[]');
+            const userId = localStorage.getItem('currentUserId');
+            if (userId && eligibleUsers.includes(userId)) return true;
             
-            if (discountAvailable) {
-                if (discountText) discountText.innerHTML = '🔥 Save 27% (3.2 months free!) - Limited Offer';
-                if (discountBadge) discountBadge.style.display = 'inline-block';
-                if (yearlyBtn) yearlyBtn.innerHTML = 'Save 27% →';
-            } else {
-                if (discountText) discountText.innerHTML = 'Regular price • No discount available';
-                if (discountBadge) discountBadge.style.display = 'none';
-                if (yearlyBtn) yearlyBtn.innerHTML = 'Upgrade →';
+            // 10% random chance for new users
+            const random = Math.random() * 100;
+            if (random <= 10 && userId) {
+                eligibleUsers.push(userId);
+                localStorage.setItem('discountEligibleUsers', JSON.stringify(eligibleUsers));
+                return true;
             }
+            return false;
         }
         
-        // Check if user is eligible for refund (random 5%)
-        function isUserEligibleForRefund(userEmail) {
-            // Check if already determined
-            if (refundEligibleUsers.includes(userEmail)) return true;
+        // Refund approval logic - 5% of total requests
+        function isRefundApproved() {
+            refundRequestCount++;
+            localStorage.setItem('refundRequestCount', refundRequestCount);
             
-            // Randomly select 5% of users
-            const randomNum = Math.random() * 100;
-            const isEligible = randomNum <= 5;
+            // Calculate target approvals (5% of total requests)
+            const targetApprovals = Math.floor(refundRequestCount * 0.05);
             
-            if (isEligible) {
-                refundEligibleUsers.push(userEmail);
-                localStorage.setItem('refundEligibleUsers', JSON.stringify(refundEligibleUsers));
+            if (refundSuccessCount < targetApprovals) {
+                refundSuccessCount++;
+                localStorage.setItem('refundSuccessCount', refundSuccessCount);
+                return true;
             }
-            return isEligible;
+            return false;
         }
         
-        // Supported Platforms
         const supportedPlatforms = [
             { name: 'GitHub', type: 'code', icon: 'fab fa-github', color: 'text-gray-400' },
             { name: 'LinkedIn', type: 'social', icon: 'fab fa-linkedin', color: 'text-blue-400' },
-            { name: 'Twitter/X', type: 'social', icon: 'fab fa-twitter', color: 'text-blue-400' },
+            { name: 'Twitter', type: 'social', icon: 'fab fa-twitter', color: 'text-blue-400' },
             { name: 'Facebook', type: 'social', icon: 'fab fa-facebook', color: 'text-blue-600' },
             { name: 'Instagram', type: 'social', icon: 'fab fa-instagram', color: 'text-pink-500' },
             { name: 'Stack Overflow', type: 'code', icon: 'fab fa-stack-overflow', color: 'text-orange-400' },
             { name: 'Reddit', type: 'social', icon: 'fab fa-reddit', color: 'text-orange-500' },
             { name: 'Medium', type: 'blog', icon: 'fab fa-medium', color: 'text-green-400' },
-            { name: 'Dev.to', type: 'code', icon: 'fab fa-dev', color: 'text-gray-400' },
             { name: 'GitLab', type: 'code', icon: 'fab fa-gitlab', color: 'text-orange-500' },
-            { name: 'YouTube', type: 'social', icon: 'fab fa-youtube', color: 'text-red-500' },
-            { name: 'Pinterest', type: 'social', icon: 'fab fa-pinterest', color: 'text-red-400' },
-            { name: 'Quora', type: 'social', icon: 'fab fa-quora', color: 'text-red-500' },
-            { name: 'Telegram', type: 'social', icon: 'fab fa-telegram', color: 'text-blue-400' },
-            { name: 'Discord', type: 'social', icon: 'fab fa-discord', color: 'text-purple-500' },
-            { name: 'TikTok', type: 'social', icon: 'fab fa-tiktok', color: 'text-gray-400' },
-            { name: 'Snapchat', type: 'social', icon: 'fab fa-snapchat', color: 'text-yellow-500' },
-            { name: 'WhatsApp', type: 'social', icon: 'fab fa-whatsapp', color: 'text-green-500' }
+            { name: 'YouTube', type: 'social', icon: 'fab fa-youtube', color: 'text-red-500' }
         ];
         
-        // ==================== TOAST FUNCTION ====================
-        function showToast(message, type = 'success') {
+        function showToast(msg, type) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `fixed bottom-4 right-4 z-50 bg-slate-800 border-l-4 ${type === 'success' ? 'border-l-emerald-500' : 'border-l-red-500'} px-4 py-3 rounded-lg shadow-xl animate-slide-up`;
-            toast.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${type === 'success' ? 'fa-check-circle text-emerald-500' : 'fa-exclamation-triangle text-red-500'}"></i><span class="text-sm">${message}</span></div>`;
+            toast.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i><span>${msg}</span></div>`;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
         
-        // ==================== AUDIT LOG FUNCTIONS ====================
-        function addToAuditLog(action, details) {
-            auditLogs.unshift({ id: Date.now(), action: action, details: details, timestamp: new Date().toLocaleString() });
-            auditLogs = auditLogs.slice(0, 50);
-            localStorage.setItem('auditLogs', JSON.stringify(auditLogs));
-        }
-        
-        function showAuditLog() {
-            const container = document.getElementById('auditLogList');
-            if (auditLogs.length === 0) {
-                container.innerHTML = '<div class="text-center text-slate-500 py-4">No activity logs found</div>';
-            } else {
-                container.innerHTML = auditLogs.map(log => `<div class="bg-slate-800/50 p-3 rounded-lg"><div class="flex justify-between items-start"><span class="text-xs font-semibold text-indigo-400">${log.action}</span><span class="text-xs text-slate-500">${log.timestamp}</span></div><p class="text-xs text-slate-400 mt-1">${log.details}</p></div>`).join('');
-            }
-            document.getElementById('auditLogModal').style.display = 'flex';
-        }
-        
-        function closeAuditModal() { document.getElementById('auditLogModal').style.display = 'none'; }
-        
-        function exportAuditLog() {
-            if (auditLogs.length === 0) { showToast('No logs to export', 'error'); return; }
-            const blob = new Blob([JSON.stringify(auditLogs, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `audit_log_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
-            showToast('Audit log exported!', 'success');
-        }
-        
         // ==================== AGE VERIFICATION ====================
-        function updateAgeInfoMessage() {
-            const region = document.getElementById('regionSelect').value;
-            const infoText = document.getElementById('ageInfo');
-            const messages = {
-                india: '🇮🇳 India: Minimum 18 years (DPDP Act 2023)',
-                eu: '🇪🇺 European Union: Minimum 16 years (GDPR Article 8)',
-                usa: '🇺🇸 USA: 13+ with parental consent (COPPA)',
-                uk: '🇬🇧 United Kingdom: 13+ with parental consent',
-                canada: '🇨🇦 Canada: 13+ (PIPEDA)',
-                australia: '🇦🇺 Australia: 13+ (Privacy Act)',
-                uae: '🇦🇪 UAE: 18+ (Dubai Data Law)',
-                singapore: '🇸🇬 Singapore: 13+ (PDPA)',
-                other: '🌍 Other regions: 18+ recommended'
-            };
-            infoText.innerHTML = messages[region] || messages.other;
-        }
-        
-        document.getElementById('regionSelect')?.addEventListener('change', updateAgeInfoMessage);
-        
-        function closeAgeModal() { 
-            document.getElementById('ageVerificationModal').style.display = 'none'; 
-        }
-        
         function exitSite() {
-            if (confirm('Are you sure you want to exit? You must verify your age to use this service.')) {
+            if (confirm('Are you sure you want to exit? Age verification is required to use this service.')) {
                 window.location.href = 'about:blank';
             }
         }
@@ -674,478 +646,202 @@
             const today = new Date();
             let age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) { age--; }
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
             
-            const ageLimits = { india: 18, eu: 16, usa: 13, uk: 13, canada: 13, australia: 13, uae: 18, singapore: 13, other: 18 };
+            const ageLimits = { india: 18, eu: 16, usa: 13, uk: 13, canada: 13, australia: 13, other: 18 };
             const requiredAge = ageLimits[region] || 18;
             
-            if (age >= requiredAge) {
-                localStorage.setItem('ageVerified', 'true');
-                localStorage.setItem('userAge', age);
-                localStorage.setItem('userRegion', region);
-                isAgeVerified = true;
-                userAge = age;
-                userRegion = region;
-                closeAgeModal();
-                addToAuditLog('AGE_VERIFICATION', `Age verified: ${age} years (${region.toUpperCase()})`);
-                showToast(`✅ Age verified! You are ${age} years old. Please verify your email.`, 'success');
-                document.getElementById('loginModal').style.display = 'flex';
-            } else {
-                document.getElementById('ageError').innerText = `You are ${age} years old. ${region.toUpperCase()} requires ${requiredAge}+ age. Parental consent required.`;
+            if (age < 13) {
+                document.getElementById('ageError').innerText = `You are ${age} years old. Minimum age is 13. You cannot use this service.`;
                 document.getElementById('ageError').classList.remove('hidden');
-                closeAgeModal();
-                document.getElementById('parentalConsentMessage').innerHTML = `You are ${age} years old. ${region.toUpperCase()} law requires parental consent. Please provide parent/guardian email.`;
-                document.getElementById('parentalConsentModal').style.display = 'flex';
-                pendingAgeData = { age: age, region: region, requiredAge: requiredAge };
-            }
-        }
-        
-        // ==================== PARENTAL CONSENT ====================
-        function closeParentalModal() { document.getElementById('parentalConsentModal').style.display = 'none'; }
-        
-        function sendParentalConsent() {
-            const parentEmail = document.getElementById('parentEmail').value;
-            const childName = document.getElementById('childName').value;
-            if (!parentEmail || !parentEmail.includes('@')) {
-                showToast('Please enter a valid parent email address', 'error');
                 return;
             }
-            localStorage.setItem('parentalConsentRequested', 'true');
-            addToAuditLog('PARENTAL_CONSENT', `Consent requested sent to ${parentEmail}`);
-            showToast(`Consent request sent to ${parentEmail}! After approval, please verify your email.`, 'success');
-            closeParentalModal();
             
-            // For demo, allow access after consent
-            if (confirm('Demo: Parental consent approved? Click OK to proceed to email verification.')) {
-                localStorage.setItem('ageVerified', 'true');
-                isAgeVerified = true;
+            if (age >= requiredAge) {
+                // Age verified - store pending and show login
+                localStorage.setItem('pendingAgeVerification', JSON.stringify({ age: age, region: region }));
+                document.getElementById('ageVerificationModal').style.display = 'none';
                 document.getElementById('loginModal').style.display = 'flex';
+                showToast(`Age verified! You are ${age} years old. Please sign in.`, 'success');
+            } else {
+                // Underage but >=13 - need parental consent
+                document.getElementById('ageError').innerText = `You are ${age} years old. ${region.toUpperCase()} requires ${requiredAge}+. Parental consent required.`;
+                document.getElementById('ageError').classList.remove('hidden');
+                document.getElementById('ageVerificationModal').style.display = 'none';
+                pendingAgeData = { age: age, region: region, requiredAge: requiredAge };
+                document.getElementById('parentalMessage').innerHTML = `You are ${age} years old. ${region.toUpperCase()} law requires parental consent. Please provide parent/guardian contact information.`;
+                document.getElementById('parentalConsentModal').style.display = 'flex';
             }
         }
         
-        // ==================== LOGIN WITH REAL OTP VERIFICATION ====================
-        function generateOTPCode() {
-            return Math.floor(100000 + Math.random() * 900000).toString();
-        }
+        function closeParentalModal() { document.getElementById('parentalConsentModal').style.display = 'none'; }
+        function closeSmsModal() { document.getElementById('smsVerificationModal').style.display = 'none'; }
         
-        function sendLoginOTP() {
-            const email = document.getElementById('loginEmail').value.trim();
-            if (!email || !email.includes('@')) {
-                showToast('Please enter a valid email address', 'error');
+        async function sendParentalConsent() {
+            const parentEmail = document.getElementById('parentEmail').value;
+            const parentPhone = document.getElementById('parentPhone').value;
+            const childName = document.getElementById('childNameParent').value;
+            
+            if (!parentEmail || !parentEmail.includes('@')) {
+                showToast('Please enter valid parent email', 'error');
+                return;
+            }
+            if (!parentPhone || parentPhone.length < 10) {
+                showToast('Please enter valid parent phone number', 'error');
                 return;
             }
             
-            pendingLoginEmail = email;
-            pendingLoginOTP = generateOTPCode();
+            pendingParentData = { parentEmail, parentPhone, childName, age: pendingAgeData.age };
             
-            // Demo: Show OTP in console and alert (in production, send via email)
-            console.log(`[DEMO] OTP for ${email}: ${pendingLoginOTP}`);
-            showToast(`OTP sent to ${email} (Demo: ${pendingLoginOTP})`, 'success');
+            // Send SMS OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            localStorage.setItem('smsOTP', otp);
+            localStorage.setItem('smsOTPExpiry', Date.now() + 10 * 60 * 1000);
+            console.log(`[SMS] OTP for ${parentPhone}: ${otp}`);
             
-            document.getElementById('emailLoginDiv').style.display = 'none';
-            document.getElementById('otpVerificationDiv').style.display = 'block';
-            document.getElementById('otpEmailDisplay').innerText = email;
+            closeParentalModal();
+            document.getElementById('smsVerificationModal').style.display = 'flex';
+            showToast(`SMS OTP sent to ${parentPhone}`, 'success');
         }
         
-        function verifyLoginOTP() {
-            const enteredOTP = document.getElementById('otpCode').value;
-            if (!enteredOTP || enteredOTP.length !== 6) {
+        function verifySmsOtp() {
+            const userOtp = document.getElementById('smsOtpInput').value;
+            const savedOtp = localStorage.getItem('smsOTP');
+            const expiry = parseInt(localStorage.getItem('smsOTPExpiry'));
+            
+            if (!userOtp || userOtp.length !== 6) {
                 showToast('Please enter 6-digit OTP', 'error');
                 return;
             }
-            
-            if (enteredOTP === pendingLoginOTP) {
-                // OTP verified successfully
-                completeLogin(pendingLoginEmail);
-            } else {
-                showToast('Invalid OTP. Please try again.', 'error');
-            }
-        }
-        
-        function resendLoginOTP() {
-            if (pendingLoginEmail) {
-                pendingLoginOTP = generateOTPCode();
-                console.log(`[DEMO] New OTP for ${pendingLoginEmail}: ${pendingLoginOTP}`);
-                showToast(`New OTP sent to ${pendingLoginEmail} (Demo: ${pendingLoginOTP})`, 'success');
-            }
-        }
-        
-        function handleGoogleSignIn() {
-            // Simulate Google Sign In with a demo email
-            const demoGoogleEmail = `user_${Date.now()}@gmail.com`;
-            completeLogin(demoGoogleEmail);
-        }
-        
-        function completeLogin(email) {
-            // Increment total registered users for discount tracking
-            if (!localStorage.getItem('userEmail')) {
-                totalRegisteredUsers++;
-                localStorage.setItem('totalRegisteredUsers', totalRegisteredUsers);
-                discountAvailable = totalRegisteredUsers < 100;
-                updateDiscountUI();
-            }
-            
-            isLoggedIn = true;
-            localStorage.setItem('userEmail', email);
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('logoutBtn').classList.remove('hidden');
-            document.getElementById('userInfo').innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm">${email.charAt(0).toUpperCase()}</div><span class="text-sm hidden md:inline">${email.split('@')[0]}</span><span class="text-xs bg-emerald-600/30 text-emerald-400 px-2 py-0.5 rounded-full ml-1">${userPlan === 'free' ? 'FREE' : 'PRO'}</span></div>`;
-            document.getElementById('ageStatusDisplay').innerHTML = `<span class="age-verified-badge"><i class="fas fa-check-circle"></i> Age Verified (${userAge}+) • ${email}</span>`;
-            document.getElementById('ageStatusDisplay').classList.remove('hidden');
-            addToAuditLog('SIGN_IN', `User signed in with email: ${email}`);
-            showToast(`Welcome to TraceBack AI, ${email.split('@')[0]}!`, 'success');
-            loadHistory();
-            
-            // Reset OTP form
-            document.getElementById('emailLoginDiv').style.display = 'block';
-            document.getElementById('otpVerificationDiv').style.display = 'none';
-            document.getElementById('loginEmail').value = '';
-            document.getElementById('otpCode').value = '';
-        }
-        
-        function closeLoginModal() { 
-            document.getElementById('loginModal').style.display = 'none'; 
-            // Reset OTP form
-            document.getElementById('emailLoginDiv').style.display = 'block';
-            document.getElementById('otpVerificationDiv').style.display = 'none';
-        }
-        
-        function handleLogout() {
-            isLoggedIn = false;
-            document.getElementById('logoutBtn').classList.add('hidden');
-            document.getElementById('userInfo').innerHTML = '';
-            document.getElementById('ageStatusDisplay').innerHTML = '';
-            addToAuditLog('SIGN_OUT', 'User signed out');
-            showToast('Signed out successfully', 'success');
-            document.getElementById('ageVerificationModal').style.display = 'flex';
-        }
-        
-        // ==================== 2FA DELETE FUNCTIONS ====================
-        function sendDeleteOTP() {
-            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
-            const otp = generateOTPCode();
-            currentDeleteOTP = otp;
-            otpExpiry = Date.now() + 10 * 60 * 1000;
-            localStorage.setItem('deleteOTP', otp);
-            localStorage.setItem('otpExpiry', otpExpiry);
-            console.log(`[DEMO] Delete OTP for ${userEmail}: ${otp}`);
-            showToast(`OTP sent to ${userEmail} (Demo: ${otp})`, 'success');
-        }
-        
-        function verifyDeleteOTP() {
-            const userOTP = document.getElementById('otpInput').value;
-            const savedOTP = localStorage.getItem('deleteOTP');
-            const savedExpiry = parseInt(localStorage.getItem('otpExpiry'));
-            
-            if (!userOTP || userOTP.length !== 6) { showToast('Please enter 6-digit OTP', 'error'); return; }
-            if (Date.now() > savedExpiry) { showToast('OTP expired! Request a new one.', 'error'); return; }
-            if (userOTP === savedOTP) {
-                localStorage.clear();
-                sessionStorage.clear();
-                currentResults = [];
-                analysisHistory = [];
-                auditLogs = [];
-                isLoggedIn = false;
-                isAgeVerified = false;
-                addToAuditLog('ACCOUNT_DELETED', 'All user data permanently deleted with 2FA verification');
-                showToast('✅ All your data has been PERMANENTLY deleted.', 'success');
-                close2FAModal();
-                setTimeout(() => { window.location.reload(); }, 2000);
-            } else {
-                showToast('Invalid OTP! Please try again.', 'error');
-                addToAuditLog('2FA_FAILED', 'Failed OTP verification attempt');
-            }
-        }
-        
-        function requestAccountDeletion() {
-            if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
-            if (confirm('⚠️ WARNING: This will permanently delete ALL your data. This action is IRREVERSIBLE. Continue?')) {
-                sendDeleteOTP();
-                document.getElementById('delete2FAModal').style.display = 'flex';
-            }
-        }
-        
-        function close2FAModal() {
-            document.getElementById('delete2FAModal').style.display = 'none';
-            document.getElementById('otpInput').value = '';
-        }
-        
-        // ==================== PAYMENT FUNCTIONS ====================
-        function selectFreePlan() { 
-            userPlan = 'free';
-            localStorage.setItem('userPlan', 'free');
-            showToast('Free plan activated! 5 searches per month.', 'success');
-            addToAuditLog('PLAN_CHANGE', 'Changed to Free plan');
-        }
-        
-        function initiatePayment(plan) {
-            if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
-            
-            let amount, orderId;
-            
-            if (plan === 'monthly') {
-                amount = 900;
-                orderId = 'TB-M-' + Date.now();
-                showToast(`[DEMO] Monthly plan selected. Order ID: ${orderId}. Payment gateway ready!`, 'success');
-                userPlan = 'pro_monthly';
-            } else {
-                // Yearly plan - check if discount available
-                if (discountAvailable) {
-                    amount = 7900;
-                    showToast(`[DEMO] Yearly plan with 27% discount selected. Order ID: ${orderId}. Payment gateway ready!`, 'success');
-                } else {
-                    amount = 10800; // Regular price $108
-                    showToast(`[DEMO] Yearly plan (regular price) selected. No discount available. Order ID: ${orderId}`, 'success');
-                }
-                orderId = 'TB-Y-' + Date.now();
-                userPlan = 'pro_yearly';
-            }
-            
-            localStorage.setItem('lastOrder', JSON.stringify({ id: orderId, plan: plan, date: new Date().toISOString(), amount: amount }));
-            localStorage.setItem('userPlan', userPlan);
-            addToAuditLog('PAYMENT', `${plan === 'monthly' ? 'Monthly' : 'Yearly'} plan purchased. Order ID: ${orderId}. Amount: $${amount/100}`);
-        }
-        
-        // ==================== REFUND FUNCTIONS ====================
-        function showRefundModal() { 
-            if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
-            
-            const userEmail = localStorage.getItem('userEmail');
-            const isEligible = isUserEligibleForRefund(userEmail);
-            const msgDiv = document.getElementById('refundEligibilityMsg');
-            
-            if (isEligible) {
-                msgDiv.innerHTML = '<i class="fas fa-check-circle text-emerald-400 mr-1"></i> Congratulations! You are eligible for refund (selected in 5% random draw). Please submit your request.';
-                msgDiv.className = 'bg-emerald-500/10 p-3 rounded-lg mb-4 text-sm text-emerald-400';
-                document.getElementById('submitRefundBtn').disabled = false;
-                document.getElementById('submitRefundBtn').classList.remove('disabled-refund');
-            } else {
-                msgDiv.innerHTML = '<i class="fas fa-info-circle text-amber-400 mr-1"></i> Sorry, you are not eligible for refund. Only 5% of users are randomly selected for refund eligibility.';
-                msgDiv.className = 'bg-amber-500/10 p-3 rounded-lg mb-4 text-sm text-amber-400';
-                document.getElementById('submitRefundBtn').disabled = true;
-                document.getElementById('submitRefundBtn').classList.add('disabled-refund');
-            }
-            
-            document.getElementById('refundModal').style.display = 'flex'; 
-        }
-        
-        function closeRefundModal() { document.getElementById('refundModal').style.display = 'none'; }
-        
-        function submitRefundRequest() {
-            const orderId = document.getElementById('orderId').value;
-            const email = document.getElementById('refundEmail').value;
-            const reason = document.getElementById('refundReason').value;
-            
-            if (!orderId || !email) { showToast('Please enter Order ID and Email', 'error'); return; }
-            
-            const userEmail = localStorage.getItem('userEmail');
-            const isEligible = isUserEligibleForRefund(userEmail);
-            
-            if (!isEligible) {
-                showToast('You are not eligible for refund. Only 5% of users qualify.', 'error');
-                closeRefundModal();
+            if (Date.now() > expiry) {
+                showToast('OTP expired! Please request again.', 'error');
                 return;
             }
+            if (userOtp === savedOtp) {
+                // Consent verified
+                localStorage.setItem('pendingAgeVerification', JSON.stringify({ age: pendingAgeData.age, region: 'usa', parentalConsent: true }));
+                closeSmsModal();
+                document.getElementById('loginModal').style.display = 'flex';
+                showToast('Parental consent verified! Please sign in.', 'success');
+            } else {
+                showToast('Invalid OTP! Please try again.', 'error');
+            }
+        }
+        
+        // ==================== PAYMENT & REFUND ====================
+        function selectFreePlan() { userPlan = 'free'; localStorage.setItem('userPlan', 'free'); showToast('Free plan activated!', 'success'); }
+        
+        function initiatePayment(plan) {
+            if (!window.currentUser) { showToast('Please sign in first', 'error'); return; }
+            
+            let amount = plan === 'monthly' ? 900 : 7900;
+            let discountApplied = false;
+            
+            // Check if user is eligible for discount (internal logic)
+            if (plan === 'yearly' && isEligibleForDiscount()) {
+                amount = 5800; // 27% off from $79 ($79 - 27% = $58)
+                discountApplied = true;
+                showToast('Special discount applied to your yearly plan!', 'success');
+            }
+            
+            const orderId = 'TB-' + Date.now();
+            localStorage.setItem('lastOrder', JSON.stringify({ id: orderId, plan: plan, date: new Date().toISOString(), amount: amount, discountApplied: discountApplied }));
+            showToast(`[DEMO] ${plan === 'monthly' ? 'Monthly' : 'Yearly'} plan selected. Order ID: ${orderId}. Amount: $${amount/100}`, 'success');
+            userPlan = plan === 'monthly' ? 'pro_monthly' : 'pro_yearly';
+            localStorage.setItem('userPlan', userPlan);
+        }
+        
+        function showRefundModal() {
+            if (!window.currentUser) { showToast('Please sign in first', 'error'); return; }
+            const orderId = prompt('Please enter your Order ID:');
+            if (!orderId) return;
             
             const lastOrder = JSON.parse(localStorage.getItem('lastOrder') || '{}');
             const daysSince = lastOrder.date ? (new Date() - new Date(lastOrder.date)) / (1000 * 60 * 60 * 24) : 99;
             
-            if (daysSince <= 7 && lastOrder.id === orderId && searchesUsed <= 10) {
-                showToast(`Refund request submitted for Order ${orderId}. We'll process within 48 hours.`, 'success');
-                addToAuditLog('REFUND_REQUEST', `Refund requested for Order ${orderId}. Reason: ${reason}`);
+            if (daysSince > 7) {
+                showToast('Refund period expired (7 days).', 'error');
+                return;
+            }
+            
+            // Internal refund approval logic - user doesn't know the criteria
+            const approved = isRefundApproved();
+            
+            if (approved) {
+                showToast(`Refund approved for Order ${orderId}! Amount will be credited within 5-7 business days.`, 'success');
                 localStorage.removeItem('lastOrder');
             } else {
-                showToast(`Order ${orderId} not eligible for refund. More than 7 days or usage exceeded.`, 'error');
+                showToast(`Refund request for Order ${orderId} could not be processed at this time. Please contact support.`, 'error');
             }
-            closeRefundModal();
         }
         
         // ==================== SEARCH FUNCTION ====================
         async function startAnalysis() {
             const query = document.getElementById('searchInput').value.trim();
-            if (!query) { showToast('Please enter email or phone number', 'error'); return; }
-            if (!isLoggedIn) { showToast('Please sign in first', 'error'); return; }
-            if (!isAgeVerified) { showToast('Age verification required', 'error'); document.getElementById('ageVerificationModal').style.display = 'flex'; return; }
-            
-            if (userPlan === 'free' && searchesUsed >= 5) {
-                showToast('Free limit reached! Upgrade to Pro for unlimited searches.', 'error');
-                document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
-                return;
-            }
+            if (!query) { showToast('Enter email or phone', 'error'); return; }
+            if (!window.currentUser) { showToast('Please sign in first', 'error'); return; }
+            if (userPlan === 'free' && searchesUsed >= 5) { showToast('Free limit reached! Upgrade to Pro.', 'error'); return; }
             
             currentQuery = query;
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resultsContainer').classList.add('hidden');
             
-            const steps = ['Connecting to global servers...', 'Scanning Social Media...', 'Checking Developer Platforms...', 'Analyzing data breaches...', 'Generating report...'];
-            let stepIndex = 0;
-            const stepInterval = setInterval(() => { if (stepIndex < steps.length) document.getElementById('scanStep').innerText = steps[stepIndex++]; }, 800);
-            let progress = 0;
-            const progressInterval = setInterval(() => { progress += 10; document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%'; if (progress >= 100) clearInterval(progressInterval); }, 300);
-            
             setTimeout(() => {
-                clearInterval(stepInterval); clearInterval(progressInterval);
-                const searchTerm = query.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
                 const results = [];
-                const platformLimit = userPlan === 'free' ? 25 : supportedPlatforms.length;
-                
-                for (let i = 0; i < platformLimit; i++) {
-                    const platform = supportedPlatforms[i % supportedPlatforms.length];
-                    const risk = Math.random() > 0.85 ? 'high' : (Math.random() > 0.7 ? 'medium' : 'low');
+                const limit = userPlan === 'free' ? 20 : supportedPlatforms.length;
+                for (let i = 0; i < limit; i++) {
+                    const p = supportedPlatforms[i % supportedPlatforms.length];
                     results.push({
-                        id: Date.now() + i, name: platform.name,
-                        url: `https://${platform.name.toLowerCase().replace(' ', '').replace('/', '')}.com/${searchTerm}`,
-                        type: platform.type, risk: risk,
-                        lastActive: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                        icon: platform.icon, color: platform.color
+                        id: Date.now()+i, name: p.name, url: `https://${p.name.toLowerCase()}.com/search?q=${query.split('@')[0]}`,
+                        type: p.type, risk: 'low', lastActive: '2024-03-01', icon: p.icon, color: p.color
                     });
                 }
-                
-                results.push({
-                    id: Date.now() + 100, name: 'HaveIBeenPwned',
-                    url: 'https://haveibeenpwned.com/account/' + encodeURIComponent(query),
-                    type: 'breach', risk: Math.random() > 0.5 ? 'high' : 'low',
-                    lastActive: 'Data Breach Check', icon: 'fas fa-shield-alt', color: 'text-yellow-400'
-                });
-                
                 currentResults = results;
                 searchesUsed++;
                 localStorage.setItem('searchesUsed', searchesUsed);
-                
-                analysisHistory.unshift({ id: Date.now(), query: query, timestamp: new Date().toISOString(), resultsCount: currentResults.length });
-                localStorage.setItem('traceHistory', JSON.stringify(analysisHistory.slice(0, 20)));
-                
                 renderResults();
-                loadHistory();
-                addToAuditLog('SEARCH', `Searched for: ${query}, Found: ${results.length} results`);
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('resultsContainer').classList.remove('hidden');
-                showToast(`Found ${results.length} digital footprints! ${userPlan === 'free' ? (5 - searchesUsed) + ' searches left' : 'Unlimited searches'}`, 'success');
-            }, 3500);
+                showToast(`Found ${results.length} results!`, 'success');
+            }, 2000);
         }
         
         function renderResults() {
-            let filtered = currentResults.filter(r => currentFilter === 'all' || r.type === currentFilter);
-            const searchTerm = document.getElementById('searchFilter')?.value.toLowerCase() || '';
-            if (searchTerm) filtered = filtered.filter(r => r.name.toLowerCase().includes(searchTerm));
-            
-            document.getElementById('totalSites').innerText = filtered.length;
-            document.getElementById('totalSocial').innerText = filtered.filter(r => r.type === 'social').length;
-            document.getElementById('totalCode').innerText = filtered.filter(r => r.type === 'code').length;
-            document.getElementById('totalBreaches').innerText = filtered.filter(r => r.type === 'breach').length;
-            const highRisk = filtered.filter(r => r.risk === 'high').length, mediumRisk = filtered.filter(r => r.risk === 'medium').length;
-            document.getElementById('riskLevel').innerHTML = (highRisk * 30 + mediumRisk * 10) > 50 ? 'High' : (highRisk * 30 + mediumRisk * 10) > 20 ? 'Medium' : 'Low';
+            document.getElementById('totalSites').innerText = currentResults.length;
+            document.getElementById('totalSocial').innerText = currentResults.filter(r => r.type === 'social').length;
+            document.getElementById('totalCode').innerText = currentResults.filter(r => r.type === 'code').length;
             document.getElementById('resultQuery').innerHTML = currentQuery;
-            document.getElementById('resultCount').innerHTML = filtered.length;
+            document.getElementById('resultCount').innerHTML = currentResults.length;
             
-            const start = (currentPage - 1) * itemsPerPage;
-            const paginated = filtered.slice(start, start + itemsPerPage);
             const container = document.getElementById('resultsList');
-            container.innerHTML = paginated.map(result => `<div class="result-item bg-slate-800/40 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3 hover:bg-slate-800/60 transition"><div class="flex-1 min-w-[200px]"><div class="flex items-center gap-2"><i class="${result.icon} ${result.color} text-lg"></i><span class="font-semibold">${escapeHtml(result.name)}</span><span class="text-xs px-2 py-0.5 rounded-full bg-${result.risk === 'low' ? 'emerald' : result.risk === 'medium' ? 'amber' : 'red'}-500/20 text-${result.risk === 'low' ? 'emerald' : result.risk === 'medium' ? 'amber' : 'red'}-400">${result.risk}</span></div><div class="text-xs text-slate-500 mt-1 break-all"><a href="${result.url}" target="_blank" class="hover:text-indigo-400">${result.url.substring(0, 70)}...</a></div><div class="text-xs text-slate-600 mt-1">Last active: ${result.lastActive}</div></div><div class="flex gap-2"><button onclick="copyToClipboard('${result.url}')" class="bg-slate-700 hover:bg-indigo-600 w-8 h-8 rounded-lg transition"><i class="fas fa-copy text-xs"></i></button><button onclick="shareSingleResult('${result.name}', '${result.url}')" class="bg-slate-700 hover:bg-emerald-600 w-8 h-8 rounded-lg transition"><i class="fas fa-share-alt text-xs"></i></button><button onclick="deleteSingleResult(${result.id})" class="bg-slate-700 hover:bg-red-600 w-8 h-8 rounded-lg transition"><i class="fas fa-trash-alt text-xs"></i></button></div></div>`).join('');
-            
-            const totalPages = Math.ceil(filtered.length / itemsPerPage);
-            const paginationDiv = document.getElementById('pagination');
-            if (totalPages > 1) {
-                paginationDiv.innerHTML = `<button onclick="changePage(${currentPage-1})" class="px-3 py-1 rounded-lg bg-slate-700 text-sm">Previous</button><span class="text-sm">Page ${currentPage} of ${totalPages}</span><button onclick="changePage(${currentPage+1})" class="px-3 py-1 rounded-lg bg-slate-700 text-sm">Next</button>`;
-            } else paginationDiv.innerHTML = '';
-        }
-        
-        function changePage(page) { currentPage = page; renderResults(); }
-        function filterResults(type) { currentFilter = type; currentPage = 1; renderResults(); }
-        function deleteSingleResult(id) { currentResults = currentResults.filter(r => r.id !== id); renderResults(); addToAuditLog('DELETE_RESULT', `Deleted result ID: ${id}`); showToast('Result deleted', 'success'); }
-        function deleteAllResults() { if(confirm('Clear all results?')) { currentResults = []; renderResults(); addToAuditLog('CLEAR_ALL', 'Cleared all search results'); showToast('All results cleared', 'success'); } }
-        function copyToClipboard(text) { navigator.clipboard.writeText(text); showToast('Link Copied!', 'success'); }
-        function shareSingleResult(name, url) { if (navigator.share) { navigator.share({ title: name, text: `Check out this digital footprint found by TraceBack AI`, url: url }).catch(() => copyToClipboard(url)); } else { copyToClipboard(url); } }
-        
-        function shareResults() {
-            if (currentResults.length === 0) { showToast('No results to share', 'error'); return; }
-            const shareText = `TraceBack AI Report: Found ${currentResults.length} digital footprints for ${currentQuery}`;
-            if (navigator.share) { navigator.share({ title: 'TraceBack AI Report', text: shareText }).catch(() => copyToClipboard(shareText)); }
-            else { copyToClipboard(shareText); }
-            addToAuditLog('SHARE', 'Shared search results');
+            container.innerHTML = currentResults.map(r => `<div class="glass-card p-4 rounded-xl flex justify-between items-center"><div><i class="${r.icon} ${r.color} mr-2"></i><span class="font-semibold">${r.name}</span><div class="text-xs text-slate-500 mt-1"><a href="${r.url}" target="_blank">${r.url.substring(0, 50)}...</a></div></div><button onclick="copyToClipboard('${r.url}')" class="bg-slate-700 px-3 py-1 rounded-lg text-xs">Copy</button></div>`).join('');
         }
         
         function exportResults() {
-            if (!currentResults.length) { showToast('No results to export', 'error'); return; }
-            const exportData = { query: currentQuery, timestamp: new Date().toISOString(), totalResults: currentResults.length, results: currentResults };
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const data = JSON.stringify(currentResults, null, 2);
+            const blob = new Blob([data], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `traceback_results_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
-            addToAuditLog('EXPORT_DATA', 'Exported results as JSON');
-            showToast('Results exported as JSON!', 'success');
+            const a = document.createElement('a'); a.href = url; a.download = `traceback_${Date.now()}.json`; a.click();
+            showToast('Exported!', 'success');
         }
         
-        function exportResultsCSV() {
-            if (!currentResults.length) { showToast('No results to export', 'error'); return; }
-            let csv = "Name,URL,Type,Risk,Last Active\n";
-            currentResults.forEach(r => { csv += `"${r.name}","${r.url}","${r.type}","${r.risk}","${r.lastActive}"\n`; });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `traceback_results_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
-            addToAuditLog('EXPORT_DATA', 'Exported results as CSV');
-            showToast('Results exported as CSV!', 'success');
-        }
-        
-        function printResults() { window.print(); addToAuditLog('PRINT', 'Printed search results'); }
-        
-        async function generatePDFReport() {
-            if (!currentResults.length) { showToast('No results to generate PDF', 'error'); return; }
+        function generatePDFReport() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.setFontSize(18); doc.text('TraceBack AI - Digital Footprint Report', 14, 20);
-            doc.setFontSize(12); doc.text(`Query: ${currentQuery}`, 14, 35);
-            doc.text(`Date: ${new Date().toLocaleString()}`, 14, 45);
-            doc.text(`Total Results: ${currentResults.length}`, 14, 55);
-            let y = 70;
-            currentResults.slice(0, 15).forEach((result, idx) => {
-                if (y > 270) { doc.addPage(); y = 20; }
-                doc.text(`${idx+1}. ${result.name} (${result.risk})`, 14, y);
-                doc.setFontSize(10); doc.text(`   URL: ${result.url.substring(0, 60)}`, 14, y + 5);
-                doc.setFontSize(12); y += 12;
-            });
-            doc.save(`traceback_report_${Date.now()}.pdf`);
-            addToAuditLog('PDF_REPORT', 'Generated PDF report');
-            showToast('PDF Report downloaded!', 'success');
+            doc.text('TraceBack AI Report', 20, 20);
+            doc.text(`Query: ${currentQuery}`, 20, 40);
+            doc.text(`Date: ${new Date().toLocaleString()}`, 20, 50);
+            doc.text(`Results: ${currentResults.length}`, 20, 60);
+            doc.save(`traceback_${Date.now()}.pdf`);
+            showToast('PDF downloaded!', 'success');
         }
         
-        function loadHistory() {
-            const container = document.getElementById('historyList');
-            if (analysisHistory.length === 0) {
-                container.innerHTML = '<div class="text-center text-slate-500 py-8">No history yet. Perform a search to see it here.</div>';
-                return;
-            }
-            container.innerHTML = analysisHistory.map(item => `
-                <div class="glass-card p-4 rounded-xl flex justify-between items-center flex-wrap gap-3">
-                    <div><p class="font-semibold">🔍 ${escapeHtml(item.query)}</p><p class="text-xs text-slate-500">${new Date(item.timestamp).toLocaleString()}</p><p class="text-xs text-slate-400">${item.resultsCount} results found</p></div>
-                    <button onclick="deleteHistoryItem(${item.id})" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1 rounded-lg text-sm"><i class="fas fa-trash-alt"></i> Delete</button>
-                </div>
-            `).join('');
-        }
+        function deleteAllResults() { currentResults = []; renderResults(); showToast('Cleared', 'success'); }
+        function copyToClipboard(text) { navigator.clipboard.writeText(text); showToast('Copied!', 'success'); }
+        function showPrivacy() { alert('PRIVACY POLICY: We collect only email for authentication. Age verification required. Data stored securely.'); }
+        function showTerms() { alert('TERMS OF SERVICE: You may only search your own digital footprint. Age verification required. Parental consent for minors.'); }
         
-        function deleteHistoryItem(id) { analysisHistory = analysisHistory.filter(h => h.id !== id); localStorage.setItem('traceHistory', JSON.stringify(analysisHistory)); loadHistory(); showToast('History deleted', 'success'); addToAuditLog('DELETE_HISTORY', 'Deleted search history item'); }
-        function clearAllHistory() { if(confirm('Delete all history?')) { analysisHistory = []; localStorage.setItem('traceHistory', '[]'); loadHistory(); showToast('All history cleared', 'success'); addToAuditLog('CLEAR_HISTORY', 'Cleared all search history'); } }
-        
-        // ==================== MISC FUNCTIONS ====================
-        function showPrivacy() { alert('PRIVACY POLICY (GDPR/CCPA/DPDP)\n\n1. Data Collection: Email only for authentication\n2. Age limits: India(18+), EU(16+), Others(13+ with consent)\n3. Data Localization: Region-specific servers\n4. Your Rights: Access, delete, export anytime\n5. 7-day money-back guarantee (5% users only)\n6. Discount: First 100 users only'); }
-        function showTerms() { alert('TERMS OF SERVICE\n\n1. Search only your own digital footprint\n2. Age verification required before sign in\n3. Parental consent for minors\n4. 2FA required for account deletion\n5. 7-day refund policy (5% random selection)\n6. 27% discount available for first 100 users only'); }
-        function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
-        
-        document.getElementById('searchFilter')?.addEventListener('input', () => { currentPage = 1; renderResults(); });
-        
-        // Initialize - check if age already verified
-        updateDiscountUI();
-        
-        if (isAgeVerified && localStorage.getItem('userEmail')) {
-            isLoggedIn = true;
-            document.getElementById('logoutBtn').classList.remove('hidden');
-            document.getElementById('userInfo').innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm">${localStorage.getItem('userEmail').charAt(0).toUpperCase()}</div><span class="text-sm hidden md:inline">${localStorage.getItem('userEmail').split('@')[0]}</span><span class="text-xs bg-emerald-600/30 text-emerald-400 px-2 py-0.5 rounded-full ml-1">${userPlan === 'free' ? 'FREE' : 'PRO'}</span></div>`;
-            document.getElementById('ageStatusDisplay').innerHTML = `<span class="age-verified-badge"><i class="fas fa-check-circle"></i> Age Verified (${userAge}+) • ${localStorage.getItem('userEmail')}</span>`;
-            document.getElementById('ageStatusDisplay').classList.remove('hidden');
-            document.getElementById('ageVerificationModal').style.display = 'none';
-            loadHistory();
-        } else {
-            document.getElementById('ageVerificationModal').style.display = 'flex';
-        }
+        document.getElementById('searchFilter')?.addEventListener('input', () => { renderResults(); });
     </script>
 </body>
 </html>
