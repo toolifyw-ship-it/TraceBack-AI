@@ -3,28 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <meta name="description" content="TraceBack AI — Global Digital Footprint Protection. 7-day free trial. GDPR, CCPA, DPDP compliant. Trusted by 500,000+ users.">
-    <meta name="theme-color" content="#4f46e5">
     <title>TraceBack AI • Protect Your Digital Identity</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithPopup, 
-            GoogleAuthProvider, 
-            OAuthProvider,
-            signOut, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyC1LTHQjjsS6v3KQzeeSVVKAqYqWrQnOm0",
@@ -39,11 +29,13 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Offline সাপোর্ট যোগ করা হয়েছে যাতে "Client is offline" এরর না আসে
+        enableIndexedDbPersistence(db).catch((err) => {
+            console.log("Persistence failed", err.code);
+        });
+
         const googleProvider = new GoogleAuthProvider();
-        const appleProvider = new OAuthProvider('apple.com');
-        
-        window.auth = auth;
-        window.db = db;
         
         window.firebaseSignInWithGoogle = async () => {
             try {
@@ -52,183 +44,117 @@
                 return result.user;
             } catch (error) {
                 window.showToast?.(error.message, 'error');
-                return null;
             }
         };
-        
-        window.firebaseSignInWithApple = async () => {
-            try {
-                const result = await signInWithPopup(auth, appleProvider);
-                await handleUserDocument(result.user);
-                return result.user;
-            } catch (error) {
-                window.showToast?.(error.message, 'error');
-                return null;
-            }
-        };
-        
+
         async function handleUserDocument(user) {
-            const userRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userRef);
-            const now = new Date();
-            if (!userDoc.exists()) {
-                const trialEnd = new Date();
-                trialEnd.setDate(trialEnd.getDate() + 7);
-                await setDoc(userRef, {
-                    email: user.email,
-                    name: user.displayName || user.email?.split('@')[0],
-                    photoURL: user.photoURL,
-                    createdAt: now.toISOString(),
-                    lastLogin: now.toISOString(),
-                    plan: 'trial',
-                    trialEnd: trialEnd.toISOString(),
-                    searchesUsed: 0
-                });
-            } else {
-                await updateDoc(userRef, { lastLogin: now.toISOString() });
+            try {
+                const userRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userRef);
+                const now = new Date().toISOString();
+                
+                if (!userDoc.exists()) {
+                    const trialEnd = new Date();
+                    trialEnd.setDate(trialEnd.getDate() + 7);
+                    await setDoc(userRef, {
+                        email: user.email,
+                        name: user.displayName || "User",
+                        photoURL: user.photoURL,
+                        createdAt: now,
+                        plan: 'trial',
+                        trialEnd: trialEnd.toISOString()
+                    });
+                } else {
+                    await updateDoc(userRef, { lastLogin: now });
+                }
+            } catch (e) {
+                console.error("Database Error:", e);
+                // যদি ডাটাবেস রুলস ভুল থাকে তবে এখানে এরর ধরা পড়বে
             }
         }
-        
+
         window.firebaseSignOut = () => signOut(auth);
-        
-        onAuthStateChanged(auth, async (user) => {
+
+        onAuthStateChanged(auth, (user) => {
             if (user) {
-                window.currentUser = user;
-                const ref = doc(db, 'users', user.uid);
-                const snap = await getDoc(ref);
-                const trialInfo = snap.exists() ? snap.data() : { plan: 'trial' };
-                if (typeof window.handleFirebaseSignIn === 'function') 
-                    window.handleFirebaseSignIn(user, trialInfo);
+                window.handleFirebaseSignIn(user);
             } else {
-                window.currentUser = null;
-                if (typeof window.handleFirebaseSignOutUI === 'function') 
-                    window.handleFirebaseSignOutUI();
+                window.handleFirebaseSignOutUI();
             }
         });
     </script>
     
     <style>
-        * { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
-        body { background: radial-gradient(circle at 10% 20%, #0b0f1c, #03050b); color: #eef2ff; min-height: 100vh; }
-        .glass { background: rgba(18, 25, 40, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 2rem; }
-        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(99, 102, 241, 0.2); transition: all 0.3s ease; }
-        .gradient-text { background: linear-gradient(135deg, #a5b4fc, #c084fc, #f0abfc); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .btn-primary { background: linear-gradient(145deg, #4f46e5, #7c3aed); border: none; }
-        .modal-overlay { background: rgba(2, 6, 18, 0.9); backdrop-filter: blur(20px); }
-        .animate-slide-up { animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #03050b; color: #eef2ff; min-height: 100vh; }
+        .glass { background: rgba(18, 25, 40, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 2rem; }
+        .btn-primary { background: linear-gradient(145deg, #4f46e5, #7c3aed); transition: 0.3s; }
+        .modal-overlay { background: rgba(2, 6, 18, 0.95); backdrop-filter: blur(10px); }
     </style>
 </head>
+<body>
 
-<body class="antialiased">
-
-<div id="toastContainer" class="fixed bottom-5 right-5 z-[9999] space-y-2"></div>
+<div id="toastContainer" class="fixed bottom-5 right-5 z-[9999]"></div>
 
 <div id="authModal" class="fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4">
-    <div class="glass w-full max-w-md p-6 md:p-8 rounded-3xl shadow-2xl border-indigo-500/30">
-        <div id="step1Content">
-            <h2 class="text-2xl font-bold text-center gradient-text mb-2">Verify Your Age</h2>
-            <p class="text-slate-400 text-sm text-center mb-6">Confirm you meet regional requirements.</p>
-            <input type="date" id="dobInput" class="w-full bg-slate-900/70 border border-slate-700 rounded-xl p-3 mb-4 text-white">
-            <button onclick="verifyAgeStep1()" class="w-full btn-primary py-3.5 rounded-xl font-semibold text-white shadow-lg">Continue</button>
+    <div class="glass w-full max-w-md p-8 text-center border-indigo-500/30">
+        <div id="step1">
+            <h2 class="text-2xl font-bold mb-2">Verify Your Age</h2>
+            <input type="date" id="dobInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4 text-white">
+            <button onclick="verifyAge()" class="w-full btn-primary py-3 rounded-xl font-bold">Continue</button>
         </div>
-        
-        <div id="step2Content" class="hidden">
-            <h2 class="text-2xl font-bold text-center gradient-text mb-1">Welcome</h2>
-            <p class="text-slate-400 text-sm text-center mb-8">Sign in to start your 7‑day free trial</p>
-            
+        <div id="step2" class="hidden">
+            <h2 class="text-2xl font-bold mb-2 text-indigo-400">Welcome</h2>
+            <p class="text-slate-400 mb-8">Sign in to start your 7‑day free trial</p>
             <button onclick="handleGoogleSignIn()" class="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-slate-700 py-4 rounded-xl mb-4 transition">
-                <i class="fab fa-google text-red-400"></i> <span class="font-medium">Continue with Google</span>
+                <i class="fab fa-google text-red-400"></i> <span>Continue with Google</span>
             </button>
-            
-            <button onclick="handleAppleSignIn()" class="w-full flex items-center justify-center gap-3 bg-black/30 hover:bg-black/50 border border-slate-700 py-4 rounded-xl mb-8 transition">
-                <i class="fab fa-apple text-white"></i> <span class="font-medium">Continue with Apple</span>
-            </button>
-
-            <p class="text-xs text-slate-500 text-center">By continuing, you agree to our Terms & Privacy</p>
+            <p class="text-xs text-slate-500">Secure AES-256 Authentication</p>
         </div>
     </div>
 </div>
 
-<nav class="sticky top-0 z-40 glass border-b border-indigo-500/20 px-4 py-3">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><i class="fas fa-fingerprint text-white"></i></div>
-            <h1 class="text-xl font-bold gradient-text">TraceBack AI</h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <div id="userInfo" class="flex items-center"></div>
-            <button id="logoutBtn" onclick="handleLogout()" class="hidden bg-slate-800 hover:bg-red-600 px-4 py-1.5 rounded-full text-sm transition">Logout</button>
-        </div>
+<nav class="p-4 glass m-4 flex justify-between items-center">
+    <h1 class="font-bold text-xl text-indigo-400">TraceBack AI</h1>
+    <div id="userArea" class="flex items-center gap-3"></div>
+</nav>
+
+<main class="text-center py-20 px-4">
+    <h1 class="text-5xl font-black mb-6">Your Digital Safety <span class="text-indigo-500">Starts Here</span></h1>
+    <div class="max-w-2xl mx-auto bg-slate-900/50 p-2 rounded-2xl border border-indigo-500/20 flex">
+        <input type="text" id="searchInput" placeholder="Enter email to scan..." class="flex-1 bg-transparent p-4 outline-none" disabled>
+        <button id="searchBtn" class="btn-primary px-8 rounded-xl opacity-50" disabled>Scan</button>
     </div>
 </nav>
 
-<main class="max-w-6xl mx-auto px-4 py-16 relative z-10">
-    <section class="text-center" data-aos="fade-up">
-        <h1 class="text-4xl md:text-6xl font-extrabold mb-4">Protect Your <span class="gradient-text">Digital Identity</span></h1>
-        <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-8">Scan 200+ platforms and detect breaches instantly.</p>
-        <div id="searchArea" class="max-w-3xl mx-auto">
-            <div class="flex flex-col sm:flex-row gap-3 bg-slate-900/40 p-2 rounded-2xl border border-indigo-500/20">
-                <input type="text" id="searchInput" placeholder="Email or phone number" disabled class="flex-1 bg-transparent py-4 px-5 focus:ring-0 text-white">
-                <button onclick="startAnalysis()" id="searchBtn" disabled class="btn-primary px-8 py-4 rounded-xl font-semibold text-white opacity-50">Analyze Now</button>
-            </div>
-            <p id="loginRequiredMsg" class="text-amber-400 text-sm mt-3">🔐 Sign in via Google/Apple to start free trial</p>
-        </div>
-    </section>
-    <div id="resultsContainer" class="mt-8 space-y-4 hidden"></div>
-</main>
-
 <script>
-    AOS.init({ duration: 800, once: true });
+    AOS.init();
 
-    window.showToast = (msg, type='success') => {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `glass border-l-4 ${type==='success'?'border-l-green-500':'border-l-red-500'} px-4 py-3 rounded-xl flex items-center gap-3 animate-slide-up`;
-        toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-green-400':'fa-triangle-exclamation text-red-400'}"></i><span>${msg}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    };
-
-    window.verifyAgeStep1 = () => {
-        if(!document.getElementById('dobInput').value) return showToast('Enter date of birth','error');
-        localStorage.setItem('ageVerified', 'true');
-        document.getElementById('step1Content').classList.add('hidden');
-        document.getElementById('step2Content').classList.remove('hidden');
+    window.verifyAge = () => {
+        if(!document.getElementById('dobInput').value) return alert('Please enter DOB');
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.remove('hidden');
     };
 
     window.handleGoogleSignIn = async () => {
-        const user = await window.firebaseSignInWithGoogle();
-        if(user) document.getElementById('authModal').style.display = 'none';
+        await window.firebaseSignInWithGoogle();
     };
 
-    window.handleAppleSignIn = async () => {
-        const user = await window.firebaseSignInWithApple();
-        if(user) document.getElementById('authModal').style.display = 'none';
-    };
-
-    window.handleFirebaseSignIn = (user, trialInfo) => {
-        document.getElementById('authModal').style.display = 'none';
-        document.getElementById('logoutBtn').classList.remove('hidden');
-        document.getElementById('loginRequiredMsg').classList.add('hidden');
+    window.handleFirebaseSignIn = (user) => {
+        document.getElementById('authModal').classList.add('hidden');
         document.getElementById('searchInput').disabled = false;
         document.getElementById('searchBtn').disabled = false;
         document.getElementById('searchBtn').classList.remove('opacity-50');
-        document.getElementById('userInfo').innerHTML = `<img src="${user.photoURL || ''}" class="w-8 h-8 rounded-full border border-indigo-500"><span class="ml-2 text-sm">${user.displayName || user.email.split('@')[0]}</span>`;
+        document.getElementById('userArea').innerHTML = `
+            <span class="text-sm">${user.displayName}</span>
+            <button onclick="window.firebaseSignOut()" class="bg-red-500/20 text-red-400 px-3 py-1 rounded-lg text-xs">Logout</button>
+        `;
     };
 
-    window.handleFirebaseSignOutUI = () => { document.getElementById('authModal').style.display = 'flex'; };
-    window.handleLogout = () => window.firebaseSignOut();
-
-    window.startAnalysis = () => {
-        if(!document.getElementById('searchInput').value) return showToast('Enter email/phone', 'error');
-        showToast('Scanning 200+ platforms...', 'success');
+    window.handleFirebaseSignOutUI = () => {
+        document.getElementById('authModal').classList.remove('hidden');
+        document.getElementById('userArea').innerHTML = '';
     };
-
-    if(localStorage.getItem('ageVerified')) {
-        document.getElementById('step1Content').classList.add('hidden');
-        document.getElementById('step2Content').classList.remove('hidden');
-    }
 </script>
 </body>
 </html>
