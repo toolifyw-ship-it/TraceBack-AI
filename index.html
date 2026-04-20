@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="TraceBack AI — Global Digital Footprint Protection. 7-day free trial. GDPR compliant.">
     <title>TraceBack AI • Protect Your Digital Identity</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,131 +31,199 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Offline সাপোর্ট যোগ করা হয়েছে যাতে "Client is offline" এরর না আসে
-        enableIndexedDbPersistence(db).catch((err) => {
-            console.log("Persistence failed", err.code);
-        });
+        // Offline Support
+        enableIndexedDbPersistence(db).catch(() => console.log("Offline mode active"));
 
         const googleProvider = new GoogleAuthProvider();
-        
-        window.firebaseSignInWithGoogle = async () => {
+        const appleProvider = new OAuthProvider('apple.com');
+
+        // Authentication Handlers
+        window.signInGoogle = async () => {
             try {
-                const result = await signInWithPopup(auth, googleProvider);
-                await handleUserDocument(result.user);
-                return result.user;
-            } catch (error) {
-                window.showToast?.(error.message, 'error');
-            }
+                const res = await signInWithPopup(auth, googleProvider);
+                await syncUser(res.user);
+            } catch (e) { showToast(e.message, 'error'); }
         };
 
-        async function handleUserDocument(user) {
+        window.signInApple = async () => {
             try {
-                const userRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userRef);
-                const now = new Date().toISOString();
-                
-                if (!userDoc.exists()) {
-                    const trialEnd = new Date();
-                    trialEnd.setDate(trialEnd.getDate() + 7);
-                    await setDoc(userRef, {
-                        email: user.email,
-                        name: user.displayName || "User",
-                        photoURL: user.photoURL,
-                        createdAt: now,
-                        plan: 'trial',
-                        trialEnd: trialEnd.toISOString()
-                    });
-                } else {
-                    await updateDoc(userRef, { lastLogin: now });
-                }
-            } catch (e) {
-                console.error("Database Error:", e);
-                // যদি ডাটাবেস রুলস ভুল থাকে তবে এখানে এরর ধরা পড়বে
+                const res = await signInWithPopup(auth, appleProvider);
+                await syncUser(res.user);
+            } catch (e) { showToast(e.message, 'error'); }
+        };
+
+        async function syncUser(user) {
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            const now = new Date();
+            
+            if (!snap.exists()) {
+                const trialEnd = new Date();
+                trialEnd.setDate(trialEnd.getDate() + 7); // 7-day trial
+                await setDoc(userRef, {
+                    email: user.email,
+                    name: user.displayName || user.email.split('@')[0],
+                    photo: user.photoURL,
+                    plan: 'trial',
+                    trialEnd: trialEnd.toISOString(),
+                    createdAt: now.toISOString()
+                });
+            } else {
+                await updateDoc(userRef, { lastLogin: now.toISOString() });
             }
+            document.getElementById('authModal').classList.add('hidden');
         }
 
-        window.firebaseSignOut = () => signOut(auth);
+        window.handleLogout = () => signOut(auth);
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                window.handleFirebaseSignIn(user);
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                const data = snap.data();
+                updateUI(user, data);
             } else {
-                window.handleFirebaseSignOutUI();
+                resetUI();
             }
         });
     </script>
     
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background: #03050b; color: #eef2ff; min-height: 100vh; }
-        .glass { background: rgba(18, 25, 40, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 2rem; }
-        .btn-primary { background: linear-gradient(145deg, #4f46e5, #7c3aed); transition: 0.3s; }
-        .modal-overlay { background: rgba(2, 6, 18, 0.95); backdrop-filter: blur(10px); }
+        * { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        body { background: #03050b; color: #eef2ff; }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(79, 70, 229, 0.2); }
+        .gradient-text { background: linear-gradient(135deg, #a5b4fc, #c084fc); -webkit-background-clip: text; color: transparent; }
+        .btn-primary { background: linear-gradient(145deg, #4f46e5, #7c3aed); transition: 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.5); }
+        .modal-overlay { background: rgba(2, 6, 18, 0.9); backdrop-filter: blur(8px); }
     </style>
 </head>
-<body>
+<body class="antialiased">
 
-<div id="toastContainer" class="fixed bottom-5 right-5 z-[9999]"></div>
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-[9999]"></div>
 
-<div id="authModal" class="fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4">
-    <div class="glass w-full max-w-md p-8 text-center border-indigo-500/30">
-        <div id="step1">
-            <h2 class="text-2xl font-bold mb-2">Verify Your Age</h2>
-            <input type="date" id="dobInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4 text-white">
-            <button onclick="verifyAge()" class="w-full btn-primary py-3 rounded-xl font-bold">Continue</button>
-        </div>
-        <div id="step2" class="hidden">
-            <h2 class="text-2xl font-bold mb-2 text-indigo-400">Welcome</h2>
-            <p class="text-slate-400 mb-8">Sign in to start your 7‑day free trial</p>
-            <button onclick="handleGoogleSignIn()" class="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-slate-700 py-4 rounded-xl mb-4 transition">
-                <i class="fab fa-google text-red-400"></i> <span>Continue with Google</span>
-            </button>
-            <p class="text-xs text-slate-500">Secure AES-256 Authentication</p>
+    <div id="authModal" class="fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md p-8 rounded-3xl shadow-2xl">
+            <div id="ageStep">
+                <h2 class="text-2xl font-bold text-center gradient-text mb-4">Verification</h2>
+                <p class="text-slate-400 text-sm text-center mb-6">Please enter your date of birth to continue.</p>
+                <input type="date" id="dob" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4 text-white">
+                <button onclick="verifyAge()" class="w-full btn-primary py-3.5 rounded-xl font-bold">Continue</button>
+            </div>
+            
+            <div id="loginStep" class="hidden">
+                <h2 class="text-2xl font-bold text-center gradient-text mb-2">Welcome Back</h2>
+                <p class="text-slate-400 text-sm text-center mb-8">Start your 7-day trial with secure login.</p>
+                
+                <button onclick="signInGoogle()" class="w-full flex items-center justify-center gap-3 bg-white/5 hover:bg-white/10 border border-slate-700 py-4 rounded-xl mb-4 transition">
+                    <i class="fab fa-google text-red-400"></i> <span class="font-medium">Continue with Google</span>
+                </button>
+                
+                <button onclick="signInApple()" class="w-full flex items-center justify-center gap-3 bg-black hover:bg-zinc-900 border border-slate-700 py-4 rounded-xl mb-6 transition">
+                    <i class="fab fa-apple text-white"></i> <span class="font-medium">Continue with Apple</span>
+                </button>
+                
+                <p class="text-[10px] text-slate-500 text-center uppercase tracking-widest">Secure AES-256 Authentication</p>
+            </div>
         </div>
     </div>
-</div>
 
-<nav class="p-4 glass m-4 flex justify-between items-center">
-    <h1 class="font-bold text-xl text-indigo-400">TraceBack AI</h1>
-    <div id="userArea" class="flex items-center gap-3"></div>
-</nav>
+    <nav class="sticky top-0 z-40 glass border-b border-white/5 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center"><i class="fas fa-fingerprint"></i></div>
+                <span class="text-xl font-bold">TraceBack AI</span>
+            </div>
+            <div id="navRight" class="flex items-center gap-4">
+                </div>
+        </div>
+    </nav>
 
-<main class="text-center py-20 px-4">
-    <h1 class="text-5xl font-black mb-6">Your Digital Safety <span class="text-indigo-500">Starts Here</span></h1>
-    <div class="max-w-2xl mx-auto bg-slate-900/50 p-2 rounded-2xl border border-indigo-500/20 flex">
-        <input type="text" id="searchInput" placeholder="Enter email to scan..." class="flex-1 bg-transparent p-4 outline-none" disabled>
-        <button id="searchBtn" class="btn-primary px-8 rounded-xl opacity-50" disabled>Scan</button>
-    </div>
-</nav>
+    <main class="max-w-6xl mx-auto px-6 py-20 text-center">
+        <section data-aos="fade-up">
+            <div class="inline-block bg-indigo-500/10 border border-indigo-500/20 px-4 py-1.5 rounded-full text-xs text-indigo-400 font-medium mb-6">
+                ✨ 7-Day Free Trial Now Live
+            </div>
+            <h1 class="text-5xl md:text-7xl font-black leading-tight mb-6">
+                Protect Your <br><span class="gradient-text">Digital Footprint</span>
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10">
+                AI-powered scanning across 200+ platforms. Detect data breaches, clean records, and secure your identity.
+            </p>
 
-<script>
-    AOS.init();
+            <div class="max-w-3xl mx-auto">
+                <div class="flex flex-col sm:flex-row gap-3 bg-slate-900/50 p-2 rounded-2xl border border-white/5">
+                    <input type="text" id="mainSearch" placeholder="Email, phone or username..." disabled class="flex-1 bg-transparent py-4 px-6 outline-none text-white">
+                    <button id="searchBtn" disabled onclick="startScan()" class="btn-primary px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
+                        <i class="fas fa-search"></i> Analyze
+                    </button>
+                </div>
+                <p id="lockMsg" class="text-amber-500 text-xs mt-3"><i class="fas fa-lock mr-1"></i> Please sign in to unlock analysis tools</p>
+            </div>
+        </section>
 
-    window.verifyAge = () => {
-        if(!document.getElementById('dobInput').value) return alert('Please enter DOB');
-        document.getElementById('step1').classList.add('hidden');
-        document.getElementById('step2').classList.remove('hidden');
-    };
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20" data-aos="fade-up" data-aos-delay="200">
+            <div class="glass p-6 rounded-2xl"><div class="text-2xl font-bold text-indigo-400">500K+</div><div class="text-xs text-slate-500">Users</div></div>
+            <div class="glass p-6 rounded-2xl"><div class="text-2xl font-bold text-indigo-400">200+</div><div class="text-xs text-slate-500">Platforms</div></div>
+            <div class="glass p-6 rounded-2xl"><div class="text-2xl font-bold text-indigo-400">GDPR</div><div class="text-xs text-slate-500">Compliant</div></div>
+            <div class="glass p-6 rounded-2xl"><div class="text-2xl font-bold text-indigo-400">24/7</div><div class="text-xs text-slate-500">Monitoring</div></div>
+        </div>
+    </main>
 
-    window.handleGoogleSignIn = async () => {
-        await window.firebaseSignInWithGoogle();
-    };
+    <script>
+        AOS.init();
 
-    window.handleFirebaseSignIn = (user) => {
-        document.getElementById('authModal').classList.add('hidden');
-        document.getElementById('searchInput').disabled = false;
-        document.getElementById('searchBtn').disabled = false;
-        document.getElementById('searchBtn').classList.remove('opacity-50');
-        document.getElementById('userArea').innerHTML = `
-            <span class="text-sm">${user.displayName}</span>
-            <button onclick="window.firebaseSignOut()" class="bg-red-500/20 text-red-400 px-3 py-1 rounded-lg text-xs">Logout</button>
-        `;
-    };
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `glass border-l-4 ${type==='success'?'border-green-500':'border-red-500'} p-4 mb-2 rounded-xl animate-slide-up flex items-center gap-3`;
+            toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-green-400':'fa-times-circle text-red-400'}"></i><span class="text-sm">${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
 
-    window.handleFirebaseSignOutUI = () => {
-        document.getElementById('authModal').classList.remove('hidden');
-        document.getElementById('userArea').innerHTML = '';
-    };
-</script>
+        window.verifyAge = () => {
+            const dob = document.getElementById('dob').value;
+            if(!dob) return showToast('Please select DOB', 'error');
+            const age = new Date().getFullYear() - new Date(dob).getFullYear();
+            if(age < 13) return showToast('Minimum age requirement is 13', 'error');
+            
+            document.getElementById('ageStep').classList.add('hidden');
+            document.getElementById('loginStep').classList.remove('hidden');
+        };
+
+        function updateUI(user, userData) {
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('mainSearch').disabled = false;
+            document.getElementById('searchBtn').disabled = false;
+            document.getElementById('searchBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('lockMsg').classList.add('hidden');
+            
+            const trialDays = userData ? Math.ceil((new Date(userData.trialEnd) - new Date()) / (1000*60*60*24)) : 0;
+
+            document.getElementById('navRight').innerHTML = `
+                <div class="hidden md:flex flex-col items-end">
+                    <span class="text-xs font-bold text-indigo-400">Trial: ${trialDays} Days Left</span>
+                    <span class="text-[10px] text-slate-500">${user.email}</span>
+                </div>
+                <img src="${user.photoURL || 'https://ui-avatars.com/api/?name='+user.email}" class="w-9 h-9 rounded-full border border-indigo-500">
+                <button onclick="handleLogout()" class="text-slate-400 hover:text-red-400 transition"><i class="fas fa-sign-out-alt"></i></button>
+            `;
+        }
+
+        function resetUI() {
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('mainSearch').disabled = true;
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('searchBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('lockMsg').classList.remove('hidden');
+            document.getElementById('navRight').innerHTML = '';
+        }
+
+        window.startScan = () => {
+            const val = document.getElementById('mainSearch').value;
+            if(!val) return showToast('Enter data to scan', 'error');
+            showToast('Scanning deep web platforms...', 'success');
+        };
+    </script>
 </body>
 </html>
