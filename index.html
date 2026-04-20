@@ -2,22 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <meta name="description" content="TraceBack AI - Global Digital Footprint Protection. 7-day free trial. GDPR, CCPA, DPDP compliant.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="TraceBack AI — Global Digital Footprint Protection. 7-day free trial. GDPR, CCPA, DPDP compliant. Trusted by 500,000+ users.">
     <meta name="theme-color" content="#4f46e5">
-    <title>TraceBack AI | Protect Your Digital Identity | 7-Day Free Trial</title>
+    <title>TraceBack AI • Protect Your Digital Identity</title>
     
-    <!-- Tailwind + Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- AOS -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -28,14 +24,7 @@
             signOut, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            updateDoc, 
-            enableIndexedDbPersistence 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyC1LTHQjjsS6v3KQzeeSVVKAqYqWrQnOm0",
@@ -50,49 +39,42 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        // 🔥 Enable offline persistence to avoid "offline" errors
-        try {
-            enableIndexedDbPersistence(db).catch((err) => {
-                if (err.code === 'failed-precondition') {
-                    console.warn('Multiple tabs open, persistence only in one tab.');
-                } else if (err.code === 'unimplemented') {
-                    console.warn('Browser does not support offline persistence.');
-                }
-            });
-        } catch (e) {}
-        
         const googleProvider = new GoogleAuthProvider();
         const appleProvider = new OAuthProvider('apple.com');
-        appleProvider.addScope('email');
-        appleProvider.addScope('name');
         
         window.auth = auth;
         window.db = db;
         
-        // Safe Firestore get with offline fallback
-        async function safeGetUserDoc(uid) {
+        window.firebaseSignInWithGoogle = async () => {
             try {
-                const ref = doc(db, 'users', uid);
-                const snap = await getDoc(ref);
-                return { exists: snap.exists(), data: snap.exists() ? snap.data() : null };
+                const result = await signInWithPopup(auth, googleProvider);
+                await handleUserDocument(result.user);
+                return result.user;
             } catch (error) {
-                console.warn('Firestore offline, using local fallback', error);
-                // Offline fallback: treat as new trial user
-                return { exists: false, data: null, offline: true };
+                window.showToast?.(error.message, 'error');
+                return null;
             }
-        }
+        };
+        
+        window.firebaseSignInWithApple = async () => {
+            try {
+                const result = await signInWithPopup(auth, appleProvider);
+                await handleUserDocument(result.user);
+                return result.user;
+            } catch (error) {
+                window.showToast?.(error.message, 'error');
+                return null;
+            }
+        };
         
         async function handleUserDocument(user) {
             const userRef = doc(db, 'users', user.uid);
-            const { exists, data, offline } = await safeGetUserDoc(user.uid);
+            const userDoc = await getDoc(userRef);
             const now = new Date();
-            
-            if (!exists || offline) {
-                // Create or update in background (will sync when online)
+            if (!userDoc.exists()) {
                 const trialEnd = new Date();
                 trialEnd.setDate(trialEnd.getDate() + 7);
-                const userData = {
+                await setDoc(userRef, {
                     email: user.email,
                     name: user.displayName || user.email?.split('@')[0],
                     photoURL: user.photoURL,
@@ -100,302 +82,153 @@
                     lastLogin: now.toISOString(),
                     plan: 'trial',
                     trialEnd: trialEnd.toISOString(),
-                    searchesUsed: 0,
-                    emailVerified: true,
-                    provider: user.providerData[0]?.providerId
-                };
-                try {
-                    await setDoc(userRef, userData, { merge: true });
-                } catch (e) { /* will retry when online */ }
-                return { plan: 'trial', trialEnd: trialEnd.toISOString() };
+                    searchesUsed: 0
+                });
             } else {
-                // Online: update lastLogin
-                try {
-                    await updateDoc(userRef, { lastLogin: now.toISOString() });
-                } catch (e) {}
-                const trialEnd = new Date(data.trialEnd);
-                if (now > trialEnd && data.plan === 'trial') {
-                    try { await updateDoc(userRef, { plan: 'expired' }); } catch(e) {}
-                    return { plan: 'expired', trialEnd: data.trialEnd };
-                }
-                return { plan: data.plan, trialEnd: data.trialEnd };
+                await updateDoc(userRef, { lastLogin: now.toISOString() });
             }
         }
         
-        window.signInWithGoogle = async () => {
-            try {
-                const result = await signInWithPopup(auth, googleProvider);
-                const trialInfo = await handleUserDocument(result.user);
-                return { user: result.user, trialInfo };
-            } catch (error) {
-                window.showToast?.(error.message, 'error');
-                return null;
-            }
-        };
-        
-        window.signInWithApple = async () => {
-            try {
-                const result = await signInWithPopup(auth, appleProvider);
-                const trialInfo = await handleUserDocument(result.user);
-                return { user: result.user, trialInfo };
-            } catch (error) {
-                window.showToast?.(error.message, 'error');
-                return null;
-            }
-        };
-        
-        window.signOutUser = () => signOut(auth);
-        
-        window.checkTrialStatus = async (user) => {
-            if (!user) return { plan: 'free' };
-            const { data } = await safeGetUserDoc(user.uid);
-            if (data) {
-                const end = new Date(data.trialEnd);
-                if (new Date() > end && data.plan === 'trial') {
-                    return { plan: 'expired', trialEnd: data.trialEnd };
-                }
-                return { plan: data.plan, trialEnd: data.trialEnd };
-            }
-            return { plan: 'trial', trialEnd: new Date(Date.now() + 7*24*60*60*1000).toISOString() };
-        };
+        window.firebaseSignOut = () => signOut(auth);
         
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 window.currentUser = user;
-                const trialInfo = await window.checkTrialStatus(user);
-                if (typeof window.handleSignIn === 'function') 
-                    window.handleSignIn(user, trialInfo);
+                const ref = doc(db, 'users', user.uid);
+                const snap = await getDoc(ref);
+                const trialInfo = snap.exists() ? snap.data() : { plan: 'trial' };
+                if (typeof window.handleFirebaseSignIn === 'function') 
+                    window.handleFirebaseSignIn(user, trialInfo);
             } else {
                 window.currentUser = null;
-                if (typeof window.handleSignOut === 'function') 
-                    window.handleSignOut();
+                if (typeof window.handleFirebaseSignOutUI === 'function') 
+                    window.handleFirebaseSignOutUI();
             }
         });
     </script>
     
-    <!-- reCAPTCHA -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    
     <style>
-        * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%);
-            color: #e2e8f0;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-        .particle { position: absolute; background: rgba(79, 70, 229, 0.3); border-radius: 50%; animation: float 20s infinite linear; }
-        @keyframes float {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
-            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
-        }
-        .glass-card {
-            background: rgba(15, 25, 35, 0.55);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(79, 70, 229, 0.25);
-            transition: all 0.4s;
-            position: relative;
-            z-index: 1;
-            border-radius: 1.5rem;
-        }
-        .glass-card:hover { border-color: #4f46e5; transform: translateY(-6px) scale(1.01); box-shadow: 0 25px 40px -12px rgba(79,70,229,0.4); }
-        .gradient-text {
-            background: linear-gradient(135deg, #a5b4fc, #c084fc, #f0abfc, #818cf8);
-            background-size: 300% auto;
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shimmer 5s ease infinite;
-        }
-        @keyframes shimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .btn-primary { background: linear-gradient(90deg, #4f46e5, #7c3aed); transition: all 0.2s; position: relative; overflow: hidden; border: none; }
-        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 25px rgba(79,70,229,0.6); }
-        .result-item { animation: fadeIn 0.3s ease; border-left: 3px solid transparent; }
-        .result-item:hover { border-left-color: #4f46e5; background: rgba(79,70,229,0.08); transform: translateX(5px); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: #1e293b; border-radius: 2rem; max-width: 500px; width: 90%; padding: 2rem; border: 1px solid #4f46e5; animation: slide-up 0.3s ease; }
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1e293b; } ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
+        * { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        body { background: radial-gradient(circle at 10% 20%, #0b0f1c, #03050b); color: #eef2ff; min-height: 100vh; }
+        .glass { background: rgba(18, 25, 40, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 2rem; }
+        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(99, 102, 241, 0.2); transition: all 0.3s ease; }
+        .gradient-text { background: linear-gradient(135deg, #a5b4fc, #c084fc, #f0abfc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .btn-primary { background: linear-gradient(145deg, #4f46e5, #7c3aed); border: none; }
+        .modal-overlay { background: rgba(2, 6, 18, 0.9); backdrop-filter: blur(20px); }
+        .animate-slide-up { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
-<body>
 
-<div class="particles" id="particles"></div>
+<body class="antialiased">
 
-<!-- Toast -->
-<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+<div id="toastContainer" class="fixed bottom-5 right-5 z-[9999] space-y-2"></div>
 
-<!-- Auth Modal (Age + Social) -->
-<div id="authModal" class="modal-overlay" style="display: flex;">
-    <div class="modal-content">
-        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 24px;">
-            <div id="step1Dot" style="width: 32px; height: 8px; background: #4f46e5; border-radius: 10px;"></div>
-            <div id="step2Dot" style="width: 8px; height: 8px; background: #475569; border-radius: 10px;"></div>
-        </div>
+<div id="authModal" class="fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4">
+    <div class="glass w-full max-w-md p-6 md:p-8 rounded-3xl shadow-2xl border-indigo-500/30">
         <div id="step1Content">
-            <h3 class="text-2xl font-bold text-center gradient-text mb-2">Verify Your Age</h3>
-            <p class="text-slate-400 text-sm text-center mb-4">We need to confirm you meet regional age requirements.</p>
-            <div class="mb-4 flex justify-center"><div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div></div>
-            <p id="captchaError" class="text-red-400 text-xs mb-3 hidden">Complete reCAPTCHA.</p>
-            <select id="regionSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 text-white">
-                <option value="india">🇮🇳 India (18+)</option><option value="eu">🇪🇺 EU (16+)</option><option value="usa">🇺🇸 USA (13+)</option>
-                <option value="uk">🇬🇧 UK (13+)</option><option value="canada">🇨🇦 Canada (13+)</option><option value="australia">🇦🇺 Australia (13+)</option>
-                <option value="uae">🇦🇪 UAE (18+)</option><option value="singapore">🇸🇬 Singapore (13+)</option><option value="other">🌍 Other (18+)</option>
-            </select>
-            <input type="date" id="dobInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-4 text-white">
-            <button onclick="verifyAgeStep1()" class="w-full btn-primary py-3 rounded-xl font-semibold">Continue →</button>
-            <p id="ageError" class="text-red-400 text-xs mt-3 hidden"></p>
+            <h2 class="text-2xl font-bold text-center gradient-text mb-2">Verify Your Age</h2>
+            <p class="text-slate-400 text-sm text-center mb-6">Confirm you meet regional requirements.</p>
+            <input type="date" id="dobInput" class="w-full bg-slate-900/70 border border-slate-700 rounded-xl p-3 mb-4 text-white">
+            <button onclick="verifyAgeStep1()" class="w-full btn-primary py-3.5 rounded-xl font-semibold text-white shadow-lg">Continue</button>
         </div>
-        <div id="step2Content" style="display: none;">
-            <h3 class="text-2xl font-bold text-center gradient-text mb-2">Welcome</h3>
-            <p class="text-slate-400 text-sm text-center mb-6">Sign in to start your 7‑day free trial</p>
-            <button onclick="handleGoogleSignIn()" class="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-slate-700 py-3 rounded-xl mb-3">
-                <i class="fab fa-google"></i> Continue with Google
+        
+        <div id="step2Content" class="hidden">
+            <h2 class="text-2xl font-bold text-center gradient-text mb-1">Welcome</h2>
+            <p class="text-slate-400 text-sm text-center mb-8">Sign in to start your 7‑day free trial</p>
+            
+            <button onclick="handleGoogleSignIn()" class="w-full flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-slate-700 py-4 rounded-xl mb-4 transition">
+                <i class="fab fa-google text-red-400"></i> <span class="font-medium">Continue with Google</span>
             </button>
-            <button onclick="handleAppleSignIn()" class="w-full flex items-center justify-center gap-3 bg-black/30 hover:bg-black/50 border border-slate-700 py-3 rounded-xl">
-                <i class="fab fa-apple"></i> Continue with Apple
+            
+            <button onclick="handleAppleSignIn()" class="w-full flex items-center justify-center gap-3 bg-black/30 hover:bg-black/50 border border-slate-700 py-4 rounded-xl mb-8 transition">
+                <i class="fab fa-apple text-white"></i> <span class="font-medium">Continue with Apple</span>
             </button>
-            <p class="text-xs text-slate-500 mt-6 text-center">By continuing, you agree to our <a href="#" onclick="showTerms();return false;" class="text-indigo-400">Terms</a> and <a href="#" onclick="showPrivacy();return false;" class="text-indigo-400">Privacy</a>.</p>
+
+            <p class="text-xs text-slate-500 text-center">By continuing, you agree to our Terms & Privacy</p>
         </div>
     </div>
 </div>
 
-<!-- Parental Modal -->
-<div id="parentalModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <h3 class="text-xl font-bold text-amber-400">Parental Consent</h3>
-        <p id="parentalMsg" class="text-slate-400 text-sm my-3"></p>
-        <input type="email" id="parentEmail" placeholder="Parent Email" class="w-full bg-slate-800 rounded-xl p-3 mb-3">
-        <input type="tel" id="parentPhone" placeholder="Parent Phone" class="w-full bg-slate-800 rounded-xl p-3 mb-3">
-        <div id="otpSection" class="hidden mb-3"><input type="text" id="parentOtp" maxlength="6" placeholder="Enter OTP" class="w-full bg-slate-800 rounded-xl p-3 text-center"></div>
-        <button onclick="sendParentalConsent()" id="sendConsentBtn" class="w-full bg-amber-600 py-3 rounded-xl">Send Consent</button>
-        <button onclick="closeParentalModal()" class="w-full mt-2 text-slate-400">Cancel</button>
-    </div>
-</div>
-
-<!-- Navbar -->
-<nav class="sticky top-0 z-40 bg-[#0f172a]/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+<nav class="sticky top-0 z-40 glass border-b border-indigo-500/20 px-4 py-3">
     <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><i class="fas fa-fingerprint text-white text-xl"></i></div>
-            <div><h1 class="text-xl font-bold gradient-text">TraceBack AI</h1><p class="text-[9px] text-slate-500">7‑Day Trial · 500K+ Users</p></div>
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center"><i class="fas fa-fingerprint text-white"></i></div>
+            <h1 class="text-xl font-bold gradient-text">TraceBack AI</h1>
         </div>
         <div class="flex items-center gap-3">
-            <div id="userInfo"></div>
-            <div id="trialBadge" class="hidden"></div>
-            <button id="logoutBtn" onclick="handleLogout()" class="hidden bg-slate-700 hover:bg-red-600 px-5 py-2 rounded-full text-sm">Logout</button>
+            <div id="userInfo" class="flex items-center"></div>
+            <button id="logoutBtn" onclick="handleLogout()" class="hidden bg-slate-800 hover:bg-red-600 px-4 py-1.5 rounded-full text-sm transition">Logout</button>
         </div>
     </div>
 </nav>
 
-<!-- Main -->
-<main class="max-w-7xl mx-auto px-4 py-8 relative z-10">
-    <section class="text-center py-12" data-aos="fade-up">
-        <div class="inline-flex bg-indigo-500/20 border border-indigo-500/30 rounded-full px-4 py-1.5 text-xs mb-5"><i class="fas fa-gift mr-2"></i>7‑Day Free Trial</div>
-        <h1 class="text-5xl md:text-7xl font-black mb-6">Protect Your <span class="gradient-text">Digital Identity</span></h1>
-        <p class="text-slate-300 text-lg max-w-3xl mx-auto mb-8">TraceBack AI scans 200+ platforms, detects breaches, and helps you clean up your digital footprint.</p>
-        <div class="max-w-2xl mx-auto">
+<main class="max-w-6xl mx-auto px-4 py-16 relative z-10">
+    <section class="text-center" data-aos="fade-up">
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-4">Protect Your <span class="gradient-text">Digital Identity</span></h1>
+        <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-8">Scan 200+ platforms and detect breaches instantly.</p>
+        <div id="searchArea" class="max-w-3xl mx-auto">
             <div class="flex flex-col sm:flex-row gap-3 bg-slate-900/40 p-2 rounded-2xl border border-indigo-500/20">
-                <input type="text" id="searchInput" placeholder="Email or Phone Number" disabled class="flex-1 bg-transparent py-4 px-5 text-white placeholder-slate-500 focus:outline-none">
-                <button onclick="startAnalysis()" id="searchBtn" disabled class="btn-primary px-8 py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"><i class="fas fa-search"></i> Analyze Now</button>
+                <input type="text" id="searchInput" placeholder="Email or phone number" disabled class="flex-1 bg-transparent py-4 px-5 focus:ring-0 text-white">
+                <button onclick="startAnalysis()" id="searchBtn" disabled class="btn-primary px-8 py-4 rounded-xl font-semibold text-white opacity-50">Analyze Now</button>
             </div>
-            <p id="loginRequiredMsg" class="text-amber-400 text-sm mt-3">🔐 Sign in to start your free trial</p>
-        </div>
-        <div class="flex flex-wrap justify-center gap-4 mt-8 text-xs">
-            <span class="bg-slate-800/40 px-4 py-2 rounded-full"><i class="fas fa-check-circle text-green-400 mr-1"></i>GDPR/CCPA/DPDP</span>
-            <span class="bg-slate-800/40 px-4 py-2 rounded-full"><i class="fas fa-check-circle text-green-400 mr-1"></i>200+ Platforms</span>
-            <span class="bg-slate-800/40 px-4 py-2 rounded-full"><i class="fas fa-check-circle text-green-400 mr-1"></i>Dark Web Monitoring</span>
+            <p id="loginRequiredMsg" class="text-amber-400 text-sm mt-3">🔐 Sign in via Google/Apple to start free trial</p>
         </div>
     </section>
-
-    <!-- Stats / Features / Pricing (abbreviated for brevity, but keep from original) -->
-    <section class="grid grid-cols-2 md:grid-cols-4 gap-6 py-12"><div class="glass-card p-6 text-center"><div class="text-3xl font-black text-indigo-400">500K+</div><div class="text-slate-400">Users</div></div><div class="glass-card p-6 text-center"><div class="text-3xl font-black text-indigo-400">200+</div><div class="text-slate-400">Platforms</div></div><div class="glass-card p-6 text-center"><div class="text-3xl font-black text-indigo-400">50+</div><div class="text-slate-400">Countries</div></div><div class="glass-card p-6 text-center"><div class="text-3xl font-black text-indigo-400">99.9%</div><div class="text-slate-400">Detection</div></div></section>
-
-    <div id="loading" class="hidden text-center py-12"><div class="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto"></div></div>
-    <div id="resultsContainer" class="hidden mt-8 space-y-3"></div>
+    <div id="resultsContainer" class="mt-8 space-y-4 hidden"></div>
 </main>
-
-<footer class="border-t border-slate-800 py-8 text-center text-sm text-slate-500">© 2026 TraceBack AI · GDPR · CCPA · DPDP</footer>
 
 <script>
     AOS.init({ duration: 800, once: true });
-    function createParticles() { const c = document.getElementById('particles'); for(let i=0;i<30;i++){ const p=document.createElement('div'); p.className='particle'; p.style.width=p.style.height=(Math.random()*6+2)+'px'; p.style.left=Math.random()*100+'%'; p.style.animationDuration=(Math.random()*15+10)+'s'; c.appendChild(p); } } createParticles();
-    
-    let isLoggedIn = false, userPlan = 'free', currentResults = [];
-    const platforms = [ {name:'GitHub',icon:'fab fa-github'},{name:'LinkedIn',icon:'fab fa-linkedin'},{name:'Twitter',icon:'fab fa-twitter'},{name:'Instagram',icon:'fab fa-instagram'},{name:'Facebook',icon:'fab fa-facebook'},{name:'Reddit',icon:'fab fa-reddit'},{name:'TikTok',icon:'fab fa-tiktok'},{name:'YouTube',icon:'fab fa-youtube'} ];
-    
+
     window.showToast = (msg, type='success') => {
-        const cont = document.getElementById('toastContainer');
+        const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
-        toast.className = `bg-slate-800 border-l-4 ${type==='success'?'border-l-green-500':'border-l-red-500'} px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 animate-slide-up`;
-        toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-green-400':'fa-exclamation-triangle text-red-400'}"></i><span>${msg}</span>`;
-        cont.appendChild(toast); setTimeout(()=>toast.remove(),3000);
+        toast.className = `glass border-l-4 ${type==='success'?'border-l-green-500':'border-l-red-500'} px-4 py-3 rounded-xl flex items-center gap-3 animate-slide-up`;
+        toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-green-400':'fa-triangle-exclamation text-red-400'}"></i><span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     };
-    
+
     window.verifyAgeStep1 = () => {
-        if (typeof grecaptcha === 'undefined' || grecaptcha.getResponse() === '') { document.getElementById('captchaError').classList.remove('hidden'); return; }
-        const dob = document.getElementById('dobInput').value, region = document.getElementById('regionSelect').value;
-        if(!dob) return showToast('Enter date of birth','error');
-        const birth = new Date(dob), today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
-        const limits = { india:18, eu:16, usa:13, uk:13, canada:13, australia:13, uae:18, singapore:13, other:18 };
-        if (age >= (limits[region]||18)) {
-            localStorage.setItem('ageVerified','true');
-            document.getElementById('step1Content').style.display='none';
-            document.getElementById('step2Content').style.display='block';
-            document.getElementById('step1Dot').style.width='8px'; document.getElementById('step1Dot').style.background='#475569';
-            document.getElementById('step2Dot').style.width='32px'; document.getElementById('step2Dot').style.background='#4f46e5';
-        } else {
-            document.getElementById('ageError').innerText = `You are ${age}. Requires ${limits[region]}+.`; document.getElementById('ageError').classList.remove('hidden');
-            document.getElementById('parentalMsg').innerText = `You are ${age}. Parent consent needed.`; document.getElementById('parentalModal').style.display='flex';
-        }
+        if(!document.getElementById('dobInput').value) return showToast('Enter date of birth','error');
+        localStorage.setItem('ageVerified', 'true');
+        document.getElementById('step1Content').classList.add('hidden');
+        document.getElementById('step2Content').classList.remove('hidden');
     };
-    
-    window.handleGoogleSignIn = async () => { const res = await window.signInWithGoogle(); if(res) completeSignIn(res.user, res.trialInfo); };
-    window.handleAppleSignIn = async () => { const res = await window.signInWithApple(); if(res) completeSignIn(res.user, res.trialInfo); };
-    function completeSignIn(user, trialInfo) { document.getElementById('authModal').style.display='none'; window.handleSignIn(user, trialInfo); }
-    
-    window.handleSignIn = (user, trialInfo) => {
-        isLoggedIn = true; document.getElementById('logoutBtn').classList.remove('hidden');
-        document.getElementById('userInfo').innerHTML = `<img src="${user.photoURL || 'https://ui-avatars.com/api/?name='+user.email}" class="w-8 h-8 rounded-full border-2 border-indigo-500"><span class="hidden md:inline ml-2">${user.displayName?.split(' ')[0] || user.email?.split('@')[0]}</span>`;
-        const badge = document.getElementById('trialBadge');
-        if(trialInfo.plan === 'trial') { const days = Math.ceil((new Date(trialInfo.trialEnd)-new Date())/(1000*3600*24)); badge.innerHTML = `<span class="bg-amber-500/20 text-amber-400 text-xs px-3 py-1 rounded-full">🎁 ${days}d left</span>`; }
-        else if(trialInfo.plan === 'expired') badge.innerHTML = `<span class="bg-red-500/20 text-red-400 text-xs px-3 py-1 rounded-full">⏳ Expired</span>`;
-        badge.classList.remove('hidden'); userPlan = trialInfo.plan;
-        document.getElementById('searchInput').disabled = false; document.getElementById('searchBtn').disabled = false; document.getElementById('searchBtn').classList.remove('opacity-50','cursor-not-allowed'); document.getElementById('loginRequiredMsg').style.display='none';
+
+    window.handleGoogleSignIn = async () => {
+        const user = await window.firebaseSignInWithGoogle();
+        if(user) document.getElementById('authModal').style.display = 'none';
     };
-    window.handleSignOut = () => { isLoggedIn = false; location.reload(); };
-    window.handleLogout = () => window.signOutUser();
-    
+
+    window.handleAppleSignIn = async () => {
+        const user = await window.firebaseSignInWithApple();
+        if(user) document.getElementById('authModal').style.display = 'none';
+    };
+
+    window.handleFirebaseSignIn = (user, trialInfo) => {
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('logoutBtn').classList.remove('hidden');
+        document.getElementById('loginRequiredMsg').classList.add('hidden');
+        document.getElementById('searchInput').disabled = false;
+        document.getElementById('searchBtn').disabled = false;
+        document.getElementById('searchBtn').classList.remove('opacity-50');
+        document.getElementById('userInfo').innerHTML = `<img src="${user.photoURL || ''}" class="w-8 h-8 rounded-full border border-indigo-500"><span class="ml-2 text-sm">${user.displayName || user.email.split('@')[0]}</span>`;
+    };
+
+    window.handleFirebaseSignOutUI = () => { document.getElementById('authModal').style.display = 'flex'; };
+    window.handleLogout = () => window.firebaseSignOut();
+
     window.startAnalysis = () => {
-        const q = document.getElementById('searchInput').value.trim(); if(!q) return showToast('Enter email/phone','error'); if(!isLoggedIn) return showToast('Sign in first','error'); if(userPlan==='expired') return showToast('Trial expired. Subscribe.','error');
-        document.getElementById('loading').classList.remove('hidden'); document.getElementById('resultsContainer').classList.add('hidden');
-        setTimeout(() => {
-            const term = q.split('@')[0].replace(/[^a-z0-9]/gi,'');
-            currentResults = platforms.map(p => ({ name: p.name, icon: p.icon, url: `https://${p.name.toLowerCase()}.com/${term}`, risk: Math.random()>0.7?'high':'low' }));
-            document.getElementById('resultsContainer').innerHTML = currentResults.map(r => `<div class="glass-card p-4 rounded-xl flex justify-between"><div><i class="${r.icon} mr-2"></i> ${r.name} <span class="text-xs px-2 py-0.5 rounded-full ${r.risk==='high'?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400'}">${r.risk}</span><div class="text-xs text-slate-500">${r.url}</div></div><button onclick="window.open('${r.url}')" class="text-indigo-400"><i class="fas fa-external-link-alt"></i></button></div>`).join('');
-            document.getElementById('loading').classList.add('hidden'); document.getElementById('resultsContainer').classList.remove('hidden'); showToast(`Found ${currentResults.length} footprints`,'success');
-        },1500);
+        if(!document.getElementById('searchInput').value) return showToast('Enter email/phone', 'error');
+        showToast('Scanning 200+ platforms...', 'success');
     };
-    
-    window.showPrivacy = ()=>alert('Privacy: 7‑day trial, then ₹299/mo. GDPR/CCPA/DPDP compliant.');
-    window.showTerms = ()=>alert('Terms: 7‑day free trial. Cancel anytime.');
-    window.closeParentalModal = ()=> document.getElementById('parentalModal').style.display='none';
-    window.sendParentalConsent = ()=>{
-        const email = document.getElementById('parentEmail').value; if(!email) return showToast('Enter parent email','error');
-        const otp = Math.floor(100000+Math.random()*900000); showToast(`Demo OTP: ${otp}`,'success');
-        document.getElementById('otpSection').classList.remove('hidden');
-        document.getElementById('sendConsentBtn').onclick = ()=>{
-            if(document.getElementById('parentOtp').value === otp.toString()){ showToast('Consent approved!','success'); closeParentalModal(); document.getElementById('step1Content').style.display='none'; document.getElementById('step2Content').style.display='block'; }
-            else showToast('Invalid OTP','error');
-        };
-    };
-    if(localStorage.getItem('ageVerified')==='true'){ document.getElementById('step1Content').style.display='none'; document.getElementById('step2Content').style.display='block'; document.getElementById('step1Dot').style.width='8px'; document.getElementById('step1Dot').style.background='#475569'; document.getElementById('step2Dot').style.width='32px'; document.getElementById('step2Dot').style.background='#4f46e5'; }
+
+    if(localStorage.getItem('ageVerified')) {
+        document.getElementById('step1Content').classList.add('hidden');
+        document.getElementById('step2Content').classList.remove('hidden');
+    }
 </script>
 </body>
 </html>
