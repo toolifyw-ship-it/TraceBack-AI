@@ -20,6 +20,8 @@ export interface TraceDataNode {
   node: string;
   status: 'Secure' | 'Found' | 'EXPOSED' | 'Fragmented' | 'Compliant';
   meta: string;
+  duration?: number;
+  category?: 'Phishing' | 'Data Leak' | 'Insecure Port' | 'Metadata Trace' | 'Compliant Node';
 }
 
 export interface AuditReport {
