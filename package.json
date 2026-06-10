@@ -1,0 +1,6 @@
+"scripts": {
+  "dev": "vite",
+  "build": "tsc && vite build",
+  "vercel-build": "npm run build",
+  "start": "ts-node server.ts"
+}
