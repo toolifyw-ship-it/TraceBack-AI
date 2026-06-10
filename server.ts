@@ -9,36 +9,34 @@ import { initializeFirestore } from 'firebase/firestore';
 
 dotenv.config();
 
-// --- VERCEL COMPATIBLE SAFE FIREBASE LOADING ---
+// --- VERCEL SERVERLESS ENVIRONMENT DIRECT PARSING ---
 let firebaseConfig;
 
 if (process.env.VITE_FIREBASE_CONFIG) {
-  // Vercel deployment variables values match nibe
   try {
     firebaseConfig = JSON.parse(process.env.VITE_FIREBASE_CONFIG);
   } catch (e) {
-    console.error("Failed to parse VITE_FIREBASE_CONFIG json string.");
+    console.error("VITE_FIREBASE_CONFIG parsing layer collapsed.");
     firebaseConfig = null;
   }
 } else {
-  // Shudhu local system run time loop condition paths structure checking
   try {
     const localConfigPath = path.join(process.cwd(), 'firebase-applet-config.json');
     if (fs.existsSync(localConfigPath)) {
       firebaseConfig = JSON.parse(fs.readFileSync(localConfigPath, 'utf-8'));
     }
   } catch (err) {
-    console.warn("Local JSON file load warning context path skipped.");
+    console.warn("Dynamic configuration file asset fallback loop.");
   }
 }
 
-// Fail-safe default dummy configuration object placeholder layout mapping logic
+// Fallback configuration layout mapping rules tracker for node compiler safe exit
 if (!firebaseConfig) {
   firebaseConfig = {
     apiKey: "mock-key-placeholder",
-    authDomain: "mock-domain.firebaseapp.com",
-    projectId: "mock-project",
-    storageBucket: "mock-bucket.appspot.com",
+    authDomain: "traceback-ai.firebaseapp.com",
+    projectId: "traceback-ai",
+    storageBucket: "traceback-ai.appspot.com",
     messagingSenderId: "00000000",
     appId: "1:0000:web:mock",
     firestoreDatabaseId: "(default)"
@@ -50,7 +48,6 @@ const db = initializeFirestore(firebaseApp, {
   experimentalForceLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId || '(default)');
 
-// Ensure standard user-agent and settings for telemetry
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
   httpOptions: {
@@ -106,7 +103,6 @@ function generateFallbackData(target: string, type: 'email' | 'phone') {
   };
 }
 
-// REST APIs
 app.post('/api/auth/register-check', (req, res) => {
   const { email, phone, userId } = req.body;
   if (!email || !phone || !userId) {
@@ -192,9 +188,8 @@ app.post('/api/audit/generate', async (req, res) => {
     });
 
     const jsonText = response.text;
-    if (!jsonText) throw new Error("Empty model response trace.");
-    const parsedReport = JSON.parse(jsonText);
-    res.json({ success: true, isFallback: false, report: parsedReport });
+    if (!jsonText) throw new Error("Empty model response.");
+    res.json({ success: true, isFallback: false, report: JSON.parse(jsonText) });
   } catch (error) {
     res.json({ success: true, isFallback: true, report: generateFallbackData(target, type) });
   }
@@ -254,7 +249,7 @@ app.post('/api/refunds/process-approve', (req, res) => {
 
   res.json({
     success: true,
-    message: 'Refund approved legally.',
+    message: 'Refund approved legally. User credential keys retracted.',
     stats: { totalPaidUsersCount, approvedRefundsCount },
   });
 });
