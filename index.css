@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom CSS overrides to ensure seamless viewport responsiveness across all device width boundaries */
+@media (max-width: 639px) {
+  /* Ensure compact typography, buttons, and padding for micro-sized standard layouts on mobile */
+  .motion-div {
+    width: 92% !important;
+    max-width: 450px !important;
+    padding: 1.25rem !important;
+  }
+}
+
+/* Responsive constraints on dropdown options and custom selection nodes */
+select, option {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive custom button overlays scaling properly */
+button, input, select {
+  font-family: inherit;
+  transition-property: all;
+  transition-duration: 200ms;
+}
+
+/* --- LIGHT THEME COMPATIBILITY SCHEME OVERRIDES --- */
+.light-mode {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.light-mode nav.fixed,
+.light-mode nav.w-20,
+.light-mode div.bg-\[\#0d1117\],
+.light-mode div.bg-\[\#161b22\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light-mode nav.fixed {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.light-mode .border-white\/10,
+.light-mode .border-white\/5,
+.light-mode .border-white\/20,
+.light-mode .border-indigo-500\/20,
+.light-mode .border-indigo-500\/30 {
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode .bg-white\/5,
+.light-mode .bg-white\/10,
+.light-mode .bg-white\/20,
+.light-mode .bg-\[\#161b22\]\/30 {
+  background-color: #f1f5f9 !important;
+}
+
+.light-mode .bg-black\/40,
+.light-mode .bg-black\/20 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light-mode .text-white,
+.light-mode .text-gray-100,
+.light-mode .text-gray-200,
+.light-mode .text-gray-300 {
+  color: #0f172a !important;
+}
+
+.light-mode .text-slate-300,
+.light-mode .text-slate-400,
+.light-mode .text-slate-500,
+.light-mode .text-slate-600 {
+  color: #475569 !important;
+}
+
+.light-mode .text-gray-400,
+.light-mode .text-gray-400\/80 {
+  color: #334155 !important;
+}
+
+.light-mode .bg-\[\#0d1117\] {
+  background-color: #ffffff !important;
+}
+
+.light-mode .bg-[#010409] {
+  background-color: #f8fafc !important;
+}
+
+.light-mode .bg-indigo-600\/10 {
+  background-color: #e0e7ff !important;
+}
+
+.light-mode .text-indigo-400,
+.light-mode .text-indigo-300 {
+  color: #4f46e5 !important;
+}
+
+.light-mode .text-pink-400 {
+  color: #db2777 !important;
+}
+
+/* Modals inside light-mode must have high contrast */
+.light-mode .bg-\[\#0d1117\]Modal,
+.light-mode div.bg-\[\#0d1117\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.light-mode div.fixed.bg-black\/85,
+.light-mode div.fixed.bg-black\/95,
+.light-mode div.fixed.bg-black\/90,
+.light-mode div.fixed.bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.7) !important;
+}
+
+.light-mode .bg-white\/\[0\.02\] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.light-mode .text-gray-450 {
+  color: #334155 !important;
+}
+
+/* D3 SVG chart alignments */
+.light-mode svg text {
+  fill: #475569 !important;
+}
+
+.light-mode svg path.domain,
+.light-mode svg line {
+  stroke: #cbd5e1 !important;
+}
+
+.light-mode .bg-indigo-600\/15 {
+  background-color: #e0e7ff !important;
+  color: #3730a3 !important;
+}
+
+/* --- THE PRINT-ONLY STYLESHEETS --- */
+@media print {
+  /* Hide every viewport element */
+  body * {
+    visibility: hidden !important;
+  }
+  /* Force display only the printable report container with clean styling */
+  #print-report-doc, #print-report-doc * {
+    visibility: visible !important;
+  }
+  #print-report-doc {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 2.5rem !important;
+  }
+}
