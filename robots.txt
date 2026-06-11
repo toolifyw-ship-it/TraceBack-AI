@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://traceback.ai/sitemap.xml
