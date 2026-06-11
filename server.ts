@@ -9,14 +9,32 @@ import { initializeFirestore, collection, query, where, getDocs, doc, getDoc, se
 
 dotenv.config();
 
-// Load Firebase configuration dynamically to prevent any file load crashes
-const firebaseConfig = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8')
-);
-const firebaseApp = initializeApp(firebaseConfig);
+// Load Firebase configuration dynamically with resilient environment fallbacks to prevent Vercel file-load crashes
+let firebaseConfig: any = {};
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  }
+} catch (e) {
+  console.warn('Firebase file configurations could not be read from process fs. Falling back to active environment variables.');
+}
+
+const finalConfig = {
+  projectId: process.env.FIREBASE_PROJECT_ID || firebaseConfig.projectId || 'digital-portal-nw532',
+  appId: process.env.FIREBASE_APP_ID || firebaseConfig.appId || '1:707394046867:web:c5736f2d4f8194323af666',
+  apiKey: process.env.FIREBASE_API_KEY || firebaseConfig.apiKey || 'AIzaSyAT-P9QVnETN1xgS5WYlRAaf94EZ3NHw3o',
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || 'digital-portal-nw532.firebaseapp.com',
+  firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || 'ai-studio-8b8a5b2d-5fe8-4ad5-89c6-e18556ab1eb5',
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || 'digital-portal-nw532.firebasestorage.app',
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '707394046867',
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || ''
+};
+
+const firebaseApp = initializeApp(finalConfig);
 const db = initializeFirestore(firebaseApp, {
   experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+}, finalConfig.firestoreDatabaseId);
 
 // Ensure standard user-agent and settings for telemetry
 const ai = new GoogleGenAI({
