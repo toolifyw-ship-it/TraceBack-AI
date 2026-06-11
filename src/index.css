@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom CSS overrides to ensure seamless viewport responsiveness across all device width boundaries */
+@media (max-width: 639px) {
+  .motion-div {
+    width: 92% !important;
+    max-width: 450px !important;
+    padding: 1.25rem !important;
+  }
+}
+
+select, option {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
+}
+
+button, input, select {
+  font-family: inherit;
+  transition-property: all;
+  transition-duration: 200ms;
+}
+
+/* --- LIGHT THEME COMPATIBILITY SCHEME OVERRIDES --- */
+.light-mode {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.light-mode nav.fixed,
+.light-mode nav.w-20,
+.light-mode div.bg-\[\#0d1117\],
+.light-mode div.bg-\[\#161b22\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
